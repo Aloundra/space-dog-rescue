@@ -60,3 +60,15 @@ tests/               Vitest (logique pure + simulation de parties complètes)
 ```
 
 Les choix de conception non spécifiés par le cahier des charges sont listés dans [PLAN.md](PLAN.md).
+
+## Déploiement local (LAN)
+
+Le jeu est servi en continu sur **http://192.168.0.20:5280** par un service systemd utilisateur
+(`deploy/iron-chouquette.service`, installé dans `~/.config/systemd/user/`). Au démarrage, il rebuild puis lance `vite preview` sur `0.0.0.0:5280`.
+
+```bash
+systemctl --user restart iron-chouquette   # après une modification du code
+systemctl --user status iron-chouquette
+systemctl --user disable --now iron-chouquette   # arrêter définitivement
+```
+Note : `npm run dev` utilise le même port ; arrêtez le service avant de lancer le serveur de dev.

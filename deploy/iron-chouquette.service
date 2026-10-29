@@ -1,0 +1,15 @@
+[Unit]
+Description=Iron Chouquette (vite preview on 0.0.0.0:5280)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aloundra/workspace/iron-chouquette
+ExecStartPre=/usr/bin/npm run build
+ExecStart=/home/aloundra/workspace/iron-chouquette/node_modules/.bin/vite preview
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target
