@@ -1,5 +1,5 @@
 // Draws a World into the play area.
-import { PLAY_H, PLAY_W, PLAY_X, PLAY_Y, PX } from '../config';
+import { ENTITY_PX, GAME_SCALE as S, PLAY_H, PLAY_W, PLAY_X, PLAY_Y } from '../config';
 import { LEVELS } from '../data/levels';
 import { formatScore } from '../game/score';
 import type { Bullet, Enemy } from '../game/types';
@@ -57,7 +57,7 @@ export class WorldRenderer {
     for (const t of w.texts) {
       const alpha = Math.min(1, (t.life - t.t) * 3);
       ctx.globalAlpha = alpha;
-      if (t.digits) drawDigits(ctx, t.text, t.x, t.y, t.size, t.color, '#120c2a', 'center');
+      if (t.digits) drawDigits(ctx, t.text, t.x, t.y, Math.round(t.size), t.color, '#120c2a', 'center');
       else drawText(ctx, t.text, t.x, t.y, t.size, t.color);
       ctx.globalAlpha = 1;
     }
@@ -81,7 +81,7 @@ export class WorldRenderer {
     }
     if (e.ground) {
       ctx.fillStyle = 'rgba(8,4,20,0.45)';
-      ctx.fillRect(Math.round(e.x - e.r + 6), Math.round(e.y - e.r + 10), e.r * 2, e.r * 2);
+      ctx.fillRect(Math.round(e.x - e.r + 6 * S), Math.round(e.y - e.r + 10 * S), e.r * 2, e.r * 2);
     }
     const sprite = e.flash > 0 ? this.bank.flash(name) : this.bank.get(name);
     drawSprite(ctx, sprite, e.x, e.y, rot, 1, sy);
@@ -91,6 +91,7 @@ export class WorldRenderer {
       ctx.save();
       ctx.translate(Math.round(e.x), Math.round(e.y));
       ctx.rotate(a);
+      ctx.scale(S, S);
       ctx.fillStyle = '#120c2a';
       ctx.fillRect(0, -barrel.w / 2 - 2, barrel.len + 2, barrel.w + 4);
       ctx.fillStyle = e.flash > 0 ? '#ffffff' : '#7d86a0';
@@ -101,9 +102,9 @@ export class WorldRenderer {
     }
     if (e.kind === 'magnet' && e.y > 0) {
       ctx.strokeStyle = `rgba(111,240,255,${0.25 + 0.15 * Math.sin(w.time * 8)})`;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 4 * S;
       for (let i = 0; i < 3; i++) {
-        const r = 40 + ((w.time * 60 + i * 30) % 90);
+        const r = (40 + ((w.time * 60 + i * 30) % 90)) * S;
         ctx.beginPath();
         ctx.arc(e.x, e.y, r, 0.2 * Math.PI, 0.8 * Math.PI);
         ctx.stroke();
@@ -112,10 +113,11 @@ export class WorldRenderer {
   }
 
   private drawPickup(ctx: CanvasRenderingContext2D, kind: string, weapon: string | null, x: number, y: number, t: number): void {
-    const bob = Math.round(Math.sin(t * 5) * 3);
+    const bob = Math.round(Math.sin(t * 5) * 3 * S);
     const name = kind === 'weapon' ? `pickup_${weapon}` : kind;
+    const g = 22 * S;
     ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.1 * Math.sin(t * 8)})`;
-    ctx.fillRect(Math.round(x - 22), Math.round(y - 22 + bob), 44, 44);
+    ctx.fillRect(Math.round(x - g), Math.round(y - g + bob), g * 2, g * 2);
     drawSprite(ctx, this.bank.get(name), x, y + bob);
   }
 
@@ -125,26 +127,26 @@ export class WorldRenderer {
     const name = `boss_${b.index}`;
     if (b.def.holdsDog) {
       // Caged dog hanging under the final boss.
-      const cy = b.y + b.halfH + 26;
+      const cy = b.y + b.halfH + 26 * S;
       ctx.fillStyle = '#5b6275';
-      ctx.fillRect(Math.round(b.x - 2), Math.round(b.y + b.halfH - 6), 4, 14);
+      ctx.fillRect(Math.round(b.x - 2 * S), Math.round(b.y + b.halfH - 6 * S), 4 * S, 14 * S);
       this.drawDog(ctx, b.x, cy, w.time, true);
       ctx.fillStyle = '#9aa3b8';
-      for (let i = -2; i <= 2; i++) ctx.fillRect(Math.round(b.x + i * 12 - 2), Math.round(cy - 30), 4, 60);
-      ctx.fillRect(Math.round(b.x - 30), Math.round(cy - 32), 60, 4);
-      ctx.fillRect(Math.round(b.x - 30), Math.round(cy + 28), 60, 4);
+      for (let i = -2; i <= 2; i++) ctx.fillRect(Math.round(b.x + (i * 12 - 2) * S), Math.round(cy - 30 * S), 4 * S, 60 * S);
+      ctx.fillRect(Math.round(b.x - 30 * S), Math.round(cy - 32 * S), 60 * S, 4 * S);
+      ctx.fillRect(Math.round(b.x - 30 * S), Math.round(cy + 28 * S), 60 * S, 4 * S);
     }
     const flash = b.flash > 0 && Math.floor(w.time * 30) % 2 === 0;
     drawSprite(ctx, flash ? this.bank.flash(name) : this.bank.get(name), b.x, b.y);
     // Pulsing core light.
     ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.3 * Math.sin(w.time * 6)})`;
-    ctx.fillRect(Math.round(b.x - PX), Math.round(b.y + b.halfH * 0.1), PX * 2, PX * 2);
+    ctx.fillRect(Math.round(b.x - ENTITY_PX), Math.round(b.y + b.halfH * 0.1), ENTITY_PX * 2, ENTITY_PX * 2);
   }
 
   private drawDog(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, sad: boolean): void {
-    const hop = sad ? 0 : Math.abs(Math.sin(t * 6)) * -10;
+    const hop = sad ? 0 : Math.abs(Math.sin(t * 6)) * -10 * S;
     drawSprite(ctx, this.bank.get('dog'), x, y + hop);
-    if (!sad && Math.floor(t * 3) % 2 === 0) drawSprite(ctx, this.bank.get('heart'), x + 30, y - 34 + hop);
+    if (!sad && Math.floor(t * 3) % 2 === 0) drawSprite(ctx, this.bank.get('heart'), x + 30 * S, y - 34 * S + hop);
   }
 
   private drawPlayer(ctx: CanvasRenderingContext2D, w: World): void {
@@ -152,32 +154,46 @@ export class WorldRenderer {
     if (p.dead) return;
     if (p.invuln > 0 && Math.floor(w.time * 20) % 2 === 0) return;
     const flick = Math.floor(w.time * 30) % 2;
+    // Ship effects are authored at 1x around the ship centre, then scaled with the entities.
+    ctx.save();
+    ctx.translate(Math.round(p.x), Math.round(p.y));
+    ctx.scale(S, S);
     for (const dx of [-16, 16]) {
       ctx.fillStyle = '#ff9a2e';
-      ctx.fillRect(Math.round(p.x + dx - 4), Math.round(p.y + 24), 8, 8 + flick * 4);
+      ctx.fillRect(dx - 4, 24, 8, 8 + flick * 4);
       ctx.fillStyle = '#ffe25a';
-      ctx.fillRect(Math.round(p.x + dx - 2), Math.round(p.y + 24), 4, 4 + flick * 4);
+      ctx.fillRect(dx - 2, 24, 4, 4 + flick * 4);
     }
     const inv = w.inventory;
     if (p.firing && (inv.level('green') > 0 || inv.level('yellow') > 0)) {
       // Yellow muzzle glow in front of the ship.
       const g = 6 + flick * 2;
       ctx.fillStyle = 'rgba(255,226,90,0.45)';
-      ctx.fillRect(Math.round(p.x - g * 2), Math.round(p.y - 30 - g), g * 4, g * 2);
-      ctx.fillRect(Math.round(p.x - g), Math.round(p.y - 30 - g * 2), g * 2, g * 4);
+      ctx.fillRect(-g * 2, -30 - g, g * 4, g * 2);
+      ctx.fillRect(-g, -30 - g * 2, g * 2, g * 4);
       ctx.fillStyle = '#fff4b8';
-      ctx.fillRect(Math.round(p.x - 4), Math.round(p.y - 34), 8, 8);
+      ctx.fillRect(-4, -34, 8, 8);
     }
     if (inv.level('pink') > 0) {
       ctx.fillStyle = 'rgba(255,111,181,0.35)';
-      for (let i = 1; i <= inv.level('pink'); i++) ctx.fillRect(Math.round(p.x - 12), Math.round(p.y + 30 + i * 8), 24, 4);
+      for (let i = 1; i <= inv.level('pink'); i++) ctx.fillRect(-12, 30 + i * 8, 24, 4);
     }
+    ctx.restore();
     drawSprite(ctx, this.bank.get('player'), p.x, p.y);
   }
 
   private drawPlayerBullet(ctx: CanvasRenderingContext2D, b: Bullet): void {
-    const x = Math.round(b.x);
-    const y = Math.round(b.y);
+    // Shapes are authored at 1x around (0, 0); b.scale applies entity scale and weapon level growth.
+    ctx.save();
+    ctx.translate(Math.round(b.x), Math.round(b.y));
+    ctx.scale(b.scale, b.scale);
+    this.drawPlayerBulletShape(ctx, b);
+    ctx.restore();
+  }
+
+  private drawPlayerBulletShape(ctx: CanvasRenderingContext2D, b: Bullet): void {
+    const x = 0;
+    const y = 0;
     switch (b.style) {
       case 'shot':
         ctx.fillStyle = '#c8ff4a';
@@ -203,7 +219,6 @@ export class WorldRenderer {
         break;
       case 'missile': {
         ctx.save();
-        ctx.translate(x, y);
         ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
         ctx.fillStyle = '#120c2a';
         ctx.fillRect(-4, -10, 8, 20);
@@ -222,8 +237,21 @@ export class WorldRenderer {
   }
 
   private drawEnemyBullet(ctx: CanvasRenderingContext2D, b: Bullet, t: number): void {
-    const x = Math.round(b.x);
-    const y = Math.round(b.y);
+    if (b.style === 'eDisc') {
+      // Sprite from the entity bank, already at entity scale.
+      drawSprite(ctx, this.bank.get(`disc_${Math.floor(t * 16) % 2}`), b.x, b.y);
+      return;
+    }
+    ctx.save();
+    ctx.translate(Math.round(b.x), Math.round(b.y));
+    ctx.scale(b.scale, b.scale);
+    this.drawEnemyBulletShape(ctx, b, t);
+    ctx.restore();
+  }
+
+  private drawEnemyBulletShape(ctx: CanvasRenderingContext2D, b: Bullet, t: number): void {
+    const x = 0;
+    const y = 0;
     const block = (s: number, outline: string, fill: string, core: string): void => {
       ctx.fillStyle = outline;
       ctx.fillRect(x - s / 2 - 2, y - s / 2 + 2, s + 4, s - 4);
@@ -246,7 +274,6 @@ export class WorldRenderer {
       case 'eOrb': block(16, '#b066ff', '#2a0f52', '#7b3fd0'); break;
       case 'eMissile': {
         ctx.save();
-        ctx.translate(x, y);
         ctx.rotate(Math.atan2(b.vy, b.vx) - Math.PI / 2);
         ctx.fillStyle = '#120c2a';
         ctx.fillRect(-5, -10, 10, 20);
@@ -259,9 +286,6 @@ export class WorldRenderer {
         ctx.restore();
         break;
       }
-      case 'eDisc':
-        drawSprite(ctx, this.bank.get(`disc_${Math.floor(t * 16) % 2}`), x, y);
-        break;
       default:
         break;
     }
@@ -270,9 +294,25 @@ export class WorldRenderer {
   private drawLaser(ctx: CanvasRenderingContext2D, w: World): void {
     const p = w.player;
     const hw = w.laser.width / 2;
-    const pts: [number, number][] = [];
-    for (let y = p.y - 26; y > -20; y -= 22) pts.push([p.x + (Math.random() - 0.5) * hw * 1.6, y]);
-    pts[0] = [p.x, p.y - 26];
+    // Beam from the ship nose to the locked target (or straight up when nothing is locked).
+    const sx = p.x;
+    const sy = p.y - 26 * S;
+    const ex = w.laser.tx;
+    const ey = w.laser.ty;
+    const len = Math.hypot(ex - sx, ey - sy);
+    if (len < 1) return;
+    const ux = (ex - sx) / len;
+    const uy = (ey - sy) / len;
+    // Perpendicular, used for the electric zigzag.
+    const nx = -uy;
+    const ny = ux;
+    const step = 22 * S;
+    const pts: [number, number][] = [[sx, sy]];
+    for (let d = step; d < len; d += step) {
+      const j = (Math.random() - 0.5) * hw * 1.6;
+      pts.push([sx + ux * d + nx * j, sy + uy * d + ny * j]);
+    }
+    pts.push([ex, ey]);
     const stroke = (width: number, color: string): void => {
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
@@ -281,20 +321,33 @@ export class WorldRenderer {
       pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
       ctx.stroke();
     };
-    ctx.fillStyle = 'rgba(255,59,78,0.18)';
-    ctx.fillRect(Math.round(p.x - hw), 0, Math.round(hw * 2), Math.round(p.y - 26));
+    // Soft straight glow along the beam axis.
+    ctx.strokeStyle = 'rgba(255,59,78,0.18)';
+    ctx.lineWidth = hw * 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
     stroke(hw, 'rgba(255,59,78,0.55)');
-    stroke(6, '#ff3b4e');
-    stroke(2, '#ffffff');
+    stroke(6 * S, '#ff3b4e');
+    stroke(2 * S, '#ffffff');
     // Small electric branches.
     ctx.strokeStyle = '#ffc0c6';
-    ctx.lineWidth = 2;
-    for (let i = 2; i < pts.length; i += 3) {
+    ctx.lineWidth = 2 * S;
+    for (let i = 2; i < pts.length - 1; i += 3) {
       const [x, y] = pts[i];
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineTo(x + (Math.random() - 0.5) * hw * 3, y + (Math.random() - 0.5) * 20);
+      ctx.lineTo(x + (Math.random() - 0.5) * hw * 3, y + (Math.random() - 0.5) * 20 * S);
       ctx.stroke();
+    }
+    if (w.laser.target) {
+      // Impact flare on the locked target.
+      const r = hw * (0.8 + Math.random() * 0.4);
+      ctx.fillStyle = 'rgba(255,192,198,0.6)';
+      ctx.fillRect(Math.round(ex - r), Math.round(ey - r), Math.round(r * 2), Math.round(r * 2));
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(ex - 3 * S), Math.round(ey - 3 * S), 6 * S, 6 * S);
     }
   }
 
@@ -311,7 +364,7 @@ export class WorldRenderer {
           break;
         case 'spark':
           ctx.fillStyle = pt.color;
-          ctx.fillRect(x - 2, y - 2, 4, 4);
+          ctx.fillRect(x - pt.size / 2, y - pt.size / 2, pt.size, pt.size);
           break;
         case 'smoke':
           ctx.globalAlpha = 0.65 * (1 - k);
@@ -322,7 +375,7 @@ export class WorldRenderer {
         case 'ring':
           ctx.globalAlpha = 1 - k;
           ctx.strokeStyle = pt.color;
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 4 * S;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, pt.size * (0.3 + k), 0, Math.PI * 2);
           ctx.stroke();
@@ -342,7 +395,7 @@ export class WorldRenderer {
       for (let i = 0; i < 3; i++) {
         const r = Math.max(1, (k * 1.1 - i * 0.08) * 1000);
         ctx.strokeStyle = i === 1 ? s.light : s.color;
-        ctx.lineWidth = 28 * (1 - k) + 4;
+        ctx.lineWidth = (28 * (1 - k) + 4) * S;
         ctx.beginPath();
         ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
         ctx.stroke();

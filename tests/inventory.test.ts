@@ -3,15 +3,16 @@ import { WeaponInventory } from '../src/game/inventory';
 import { BASE_SLOTS, MAX_SLOTS, MAX_WEAPON_LEVEL } from '../src/data/weapons';
 
 describe('WeaponInventory', () => {
-  it('starts empty with 3 slots', () => {
+  it('starts empty with 5 slots, extensible to 8', () => {
     const inv = new WeaponInventory();
     expect(inv.slots).toBe(BASE_SLOTS);
-    expect(inv.slots).toBe(3);
+    expect(inv.slots).toBe(5);
+    expect(MAX_SLOTS).toBe(8);
     expect(inv.size).toBe(0);
   });
 
-  it('keeps up to 3 weapons without sacrifice', () => {
-    const inv = new WeaponInventory();
+  it('keeps up to the slot count without sacrifice', () => {
+    const inv = new WeaponInventory(3);
     expect(inv.add('violet')).toBeNull();
     expect(inv.add('blue')).toBeNull();
     expect(inv.add('red')).toBeNull();
@@ -19,7 +20,7 @@ describe('WeaponInventory', () => {
   });
 
   it('auto-sacrifices the OLDEST weapon when the limit is exceeded (FIFO)', () => {
-    const inv = new WeaponInventory();
+    const inv = new WeaponInventory(3);
     inv.add('violet');
     inv.add('blue');
     inv.add('red');
@@ -31,7 +32,7 @@ describe('WeaponInventory', () => {
   });
 
   it('reports the level of the sacrificed weapon before removal', () => {
-    const inv = new WeaponInventory();
+    const inv = new WeaponInventory(3);
     inv.add('violet');
     inv.add('violet');
     inv.add('red');
@@ -70,12 +71,10 @@ describe('WeaponInventory', () => {
   it('extra slots raise the limit up to MAX_SLOTS', () => {
     const inv = new WeaponInventory();
     expect(inv.addSlot()).toBe(true);
-    expect(inv.slots).toBe(4);
-    inv.add('violet');
-    inv.add('pink');
-    inv.add('green');
-    expect(inv.add('yellow')).toBeNull();
-    expect(inv.add('blue')).toEqual({ type: 'violet', level: 1 });
+    expect(inv.slots).toBe(6);
+    for (const t of ['violet', 'pink', 'green', 'yellow', 'blue', 'red'] as const) expect(inv.add(t)).toBeNull();
+    expect(inv.add('green')).toEqual({ type: 'violet', level: 1 });
+    expect(inv.addSlot()).toBe(true);
     expect(inv.addSlot()).toBe(true);
     expect(inv.addSlot()).toBe(false);
     expect(inv.slots).toBe(MAX_SLOTS);

@@ -94,4 +94,67 @@ describe('World simulation', () => {
     w.update(STEP, input);
     expect(w.salvos).toHaveLength(0);
   });
+
+  it('red laser locks the nearest enemy until it dies, and releases when fire is released', () => {
+    const w = new World(5, { weapons: ['red'], god: true });
+    const input = new FakeInput();
+    w.phase = 'waves';
+    w.enemies = [];
+    const near = w.spawnEnemy('armoredRect', w.player.x + 120, w.player.y - 200, 0);
+    const far = w.spawnEnemy('armoredRect', w.player.x - 300, 100, 0);
+    near.hp = far.hp = 5000;
+    input.down.add('Space');
+    w.update(STEP, input);
+    expect(w.laser.target).toBe(near);
+    // Moving the far enemy closer does not steal the lock.
+    far.x = w.player.x; far.y = w.player.y - 60;
+    for (let i = 0; i < 30; i++) w.update(STEP, input);
+    expect(w.laser.target).toBe(near);
+    expect(near.hp).toBeLessThan(5000);
+    // Release: lock dropped.
+    input.down.delete('Space');
+    w.update(STEP, input);
+    expect(w.laser.target).toBeNull();
+    // Fire again: the nearest one is now `far`.
+    input.down.add('Space');
+    w.update(STEP, input);
+    expect(w.laser.target).toBe(far);
+    // Kill it: the lock moves to the next nearest.
+    far.hp = 0.0001;
+    w.update(STEP, input);
+    w.update(STEP, input);
+    expect(far.dead).toBe(true);
+    expect(w.laser.target).toBe(near);
+  });
+
+  it('blue missiles home in on the nearest enemy', () => {
+    const w = new World(5, { weapons: ['blue'], god: true });
+    const input = new FakeInput();
+    w.phase = 'waves';
+    w.enemies = [];
+    // Target far to the side and low: unreachable without homing.
+    const e = w.spawnEnemy('armoredRect', 60, w.player.y - 60, 0);
+    e.hp = 5000;
+    input.down.add('Space');
+    for (let i = 0; i < 120; i++) {
+      e.x = 60; e.y = w.player.y - 60; e.vx = e.vy = 0;
+      w.update(STEP, input);
+    }
+    expect(e.hp).toBeLessThan(5000);
+  });
+
+  it('yellow side shots go at +45 deg while ArrowDown is held', () => {
+    const w = new World(5, { weapons: ['yellow'], god: true });
+    const input = new FakeInput();
+    w.phase = 'waves';
+    input.down.add('Space');
+    input.down.add('ArrowDown');
+    w.update(STEP, input);
+    const side = w.pShots.items.filter((b) => b.active && b.style === 'side');
+    expect(side).toHaveLength(2);
+    for (const b of side) {
+      expect(b.vy).toBeGreaterThan(0);
+      expect(Math.abs(b.vy)).toBeCloseTo(Math.abs(b.vx));
+    }
+  });
 });

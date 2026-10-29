@@ -1,6 +1,6 @@
 // Game session: one run across all levels (score, HP and weapons persist between levels).
 import {
-  PLAY_H, PLAY_W, PLAYER_BASE_SPEED, PLAYER_HITBOX, PLAYER_INVULN, PLAYER_MAX_HP,
+  GAME_SCALE, PLAY_H, PLAY_W, PLAYER_BASE_SPEED, PLAYER_HITBOX, PLAYER_INVULN, PLAYER_MAX_HP,
 } from '../config';
 import { KEYS, type InputState } from '../core/input';
 import { Rng, clamp, dist2 } from '../core/math';
@@ -14,11 +14,14 @@ import { addScore, levelBonus, pointsFor } from './score';
 import { expandWaves, type SpawnEvent } from './spawner';
 import {
   Pool, makeBullet, makeParticle, type Boss, type Bullet, type BulletStyle, type Enemy, type EnemyId,
-  type FloatText, type Particle, type ParticleKind, type Pickup, type Salvo,
+  type FloatText, type Particle, type ParticleKind, type Pickup, type Salvo, type Target,
 } from './types';
 import {
-  baseShot, laserStats, missileStats, salvoDamage, sideAngles, speedMultiplier, violetBurst,
+  baseShot, laserStats, missileStats, salvoDamage, sideShots, speedMultiplier, violetBurst,
 } from './weaponStats';
+
+/** Shorthand for the entity scale. */
+const S = GAME_SCALE;
 
 export type Phase = 'intro' | 'waves' | 'warning' | 'boss' | 'bossDying' | 'clear' | 'rescue' | 'dying';
 export type WorldEvent = 'gameover' | 'victory';
@@ -48,15 +51,18 @@ export interface Player {
 export interface Laser {
   active: boolean;
   width: number;
-  /** Top y of the beam (stops at the screen top). */
-  top: number;
+  /** Locked target (nearest enemy when firing starts); null = beam goes straight up. */
+  target: Target | null;
+  /** Beam end point. */
+  tx: number;
+  ty: number;
 }
 
 export class World {
   readonly rng: Rng;
   readonly inventory = new WeaponInventory();
   readonly player: Player = {
-    x: PLAY_W / 2, y: PLAY_H - 90, hp: PLAYER_MAX_HP, invuln: 0, fireT: 0, violetT: 0, missileT: 0,
+    x: PLAY_W / 2, y: PLAY_H - 90 * S, hp: PLAYER_MAX_HP, invuln: 0, fireT: 0, violetT: 0, missileT: 0,
     missileSide: 1, dead: false, moving: 0, firing: false,
   };
   readonly pShots = new Pool<Bullet>(600, makeBullet);
@@ -67,7 +73,7 @@ export class World {
   texts: FloatText[] = [];
   salvos: Salvo[] = [];
   boss: Boss | null = null;
-  laser: Laser = { active: false, width: 0, top: 0 };
+  laser: Laser = { active: false, width: 0, target: null, tx: 0, ty: 0 };
   events: WorldEvent[] = [];
 
   levelIndex = 0;
@@ -95,7 +101,7 @@ export class World {
       px: 0, py: 0, difficulty: 1, rng: this.rng,
       fire: (style, x, y, a, s, o) => this.fireEnemy(style, x, y, a, s, o),
       attract: (x, y, strength) => this.attract(x, y, strength),
-      boom: (x, y, big) => this.explode(x, y, big ? 40 : 20, false),
+      boom: (x, y, big) => this.explode(x, y, (big ? 40 : 20) * S, false),
       spawnMinion: (kind, x, y) => this.spawnEnemy(kind, x, y, 0),
     };
     this.startLevel(clamp(debug.startLevel ?? 0, 0, LEVELS.length - 1));
@@ -139,15 +145,18 @@ export class World {
 
     this.updatePhase(dt);
     if (!this.player.dead) this.updatePlayer(dt, input);
-    else this.laser.active = false;
+    else {
+      this.laser.active = false;
+      this.laser.target = null;
+    }
     this.updateEnemies(dt);
     if (this.boss) this.updateBossState(dt);
     this.updateBullets(dt);
     this.collide(dt);
     this.updatePickups(dt);
     this.updateEffects(dt);
-    this.player.x = clamp(this.player.x, 24, PLAY_W - 24);
-    this.player.y = clamp(this.player.y, 40, PLAY_H - 30);
+    this.player.x = clamp(this.player.x, 24 * S, PLAY_W - 24 * S);
+    this.player.y = clamp(this.player.y, 40 * S, PLAY_H - 30 * S);
   }
 
   private updatePhase(dt: number): void {
@@ -176,7 +185,7 @@ export class World {
       case 'bossDying':
         if (this.boss && this.phaseT < 2.4 && this.rng.chance(0.35)) {
           const b = this.boss;
-          this.explode(b.x + this.rng.range(-b.halfW, b.halfW), b.y + this.rng.range(-b.halfH, b.halfH), 34, true);
+          this.explode(b.x + this.rng.range(-b.halfW, b.halfW), b.y + this.rng.range(-b.halfH, b.halfH), 34 * S, true);
           this.shake = 0.3;
         }
         if (this.phaseT > 2.6) this.finishBoss();
@@ -203,8 +212,8 @@ export class World {
     const b = this.boss;
     if (!b) return;
     this.score = addScore(this.score, b.def.points);
-    this.addText(String(b.def.points), b.x, b.y, '#ffffff', true, 3);
-    this.explode(b.x, b.y, 90, true);
+    this.addText(String(b.def.points), b.x, b.y, '#ffffff', true, 3 * S);
+    this.explode(b.x, b.y, 90 * S, true);
     this.boss = null;
     this.eShots.clear();
     this.lastBonus = levelBonus(this.levelIndex + 1, this.player.hp);
@@ -214,8 +223,8 @@ export class World {
       this.setPhase('rescue');
       return;
     }
-    this.pickups.push({ kind: 'heart', weapon: null, x: b.x - 30, y: b.y, t: 0 });
-    this.pickups.push({ kind: 'slot', weapon: null, x: b.x + 30, y: b.y, t: 0 });
+    this.pickups.push({ kind: 'heart', weapon: null, x: b.x - 30 * S, y: b.y, t: 0 });
+    this.pickups.push({ kind: 'slot', weapon: null, x: b.x + 30 * S, y: b.y, t: 0 });
     this.setPhase('clear');
   }
 
@@ -251,6 +260,8 @@ export class World {
     const laser = laserStats(lv('red'));
     this.laser.active = firing && laser !== null;
     this.laser.width = laser?.width ?? 0;
+    // Releasing fire (or losing the red weapon) breaks the lock.
+    if (!this.laser.active) this.laser.target = null;
     if (!firing) {
       p.fireT = Math.max(0, p.fireT - dt);
       return;
@@ -263,10 +274,15 @@ export class World {
       if (p.fireT < 0) p.fireT = 0;
       for (let i = 0; i < b.count; i++) {
         const a = -Math.PI / 2 + (i - (b.count - 1) / 2) * b.spread;
-        const off = (i - (b.count - 1) / 2) * 7;
-        this.firePlayer('shot', p.x + off, p.y - 26, a, b.speed, b.damage, 4);
+        const off = (i - (b.count - 1) / 2) * 7 * S;
+        this.firePlayer('shot', p.x + off, p.y - 26 * S, a, b.speed, b.damage, b.radius, b.scale);
       }
-      for (const a of sideAngles(lv('yellow'))) this.firePlayer('side', p.x, p.y - 6, a, 620, 1, 4);
+      // Yellow side shots follow the vertical arrows: up = -45 deg, none = horizontal, down = +45 deg.
+      const vertical = (input.isDown(KEYS.down) ? 1 : 0) - (input.isDown(KEYS.up) ? 1 : 0);
+      const side = sideShots(lv('yellow'), vertical);
+      if (side) {
+        for (const a of side.angles) this.firePlayer('side', p.x, p.y - 6 * S, a, side.speed, side.damage, side.radius, side.scale);
+      }
     }
 
     const v = violetBurst(lv('violet'));
@@ -276,7 +292,7 @@ export class World {
         p.violetT += v.interval;
         for (let i = 0; i < v.count; i++) {
           const a = this.rng.range(0, Math.PI * 2);
-          const bl = this.firePlayer('violet', p.x, p.y, a, v.speed * this.rng.range(0.7, 1.1), v.damage, 5);
+          const bl = this.firePlayer('violet', p.x, p.y, a, v.speed * this.rng.range(0.7, 1.1), v.damage, v.radius, v.scale);
           if (bl) bl.life = v.life;
         }
       }
@@ -287,25 +303,33 @@ export class World {
       p.missileT -= dt;
       if (p.missileT <= 0) {
         p.missileT += m.interval;
+        const target = this.nearestTarget(p.x, p.y);
         for (let i = 0; i < m.count; i++) {
           p.missileSide = -p.missileSide;
-          const bl = this.firePlayer('missile', p.x + p.missileSide * 18, p.y, -Math.PI / 2 + p.missileSide * 0.35, 300, m.damage, 6);
+          const bl = this.firePlayer('missile', p.x + p.missileSide * 18 * S, p.y, -Math.PI / 2 + p.missileSide * 0.35, 300, m.damage, m.radius, m.scale);
           if (bl) {
             bl.homing = m.homing;
-            bl.life = 2.5;
+            bl.target = target;
+            bl.life = 4;
           }
         }
       }
     }
 
-    if (laser) this.laser.top = 0;
+    if (this.laser.active) {
+      // Lock on the nearest enemy; keep the lock until it dies or fire is released.
+      if (!this.isValidTarget(this.laser.target)) this.laser.target = this.nearestTarget(p.x, p.y);
+    }
   }
 
-  private firePlayer(style: BulletStyle, x: number, y: number, a: number, speed: number, dmg: number, r: number): Bullet | null {
+  private firePlayer(
+    style: BulletStyle, x: number, y: number, a: number, speed: number, dmg: number, r: number, scale: number,
+  ): Bullet | null {
     const b = this.pShots.acquire();
     if (!b) return null;
     b.x = x; b.y = y; b.vx = Math.cos(a) * speed; b.vy = Math.sin(a) * speed;
     b.r = r; b.dmg = dmg; b.style = style; b.t = 0; b.life = 2; b.homing = 0; b.bounce = false;
+    b.scale = scale; b.target = null;
     return b;
   }
 
@@ -314,15 +338,16 @@ export class World {
     const b = this.eShots.acquire();
     if (!b) return;
     b.x = x; b.y = y; b.vx = Math.cos(a) * speed; b.vy = Math.sin(a) * speed;
-    b.r = o.r ?? (style === 'eMissile' ? 6 : style === 'eOrb' ? 7 : 5);
+    b.r = (o.r ?? (style === 'eMissile' ? 6 : style === 'eOrb' ? 7 : 5)) * S;
     b.dmg = 1; b.style = style; b.t = 0; b.life = o.life ?? 8; b.homing = o.homing ?? 0; b.bounce = o.bounce ?? false;
+    b.scale = S; b.target = null;
   }
 
   private attract(x: number, y: number, strength: number): void {
     const p = this.player;
     if (p.dead) return;
     const d = Math.sqrt(dist2(x, y, p.x, p.y));
-    if (d < 30 || d > 650) return;
+    if (d < 30 * S || d > 650) return;
     const f = (strength * (1 - d / 650)) / d;
     p.x += (x - p.x) * f * (1 / 60);
     p.y += (y - p.y) * f * (1 / 60);
@@ -339,14 +364,14 @@ export class World {
     for (const b of this.eShots.items) {
       if (!b.active) continue;
       b.active = false;
-      this.spawnParticle('spark', b.x, b.y, 0, 0, 0.3, 4, info.light);
+      this.spawnParticle('spark', b.x, b.y, 0, 0, 0.3, 4 * S, info.light);
     }
     for (const e of this.enemies) if (e.y > -20 && !e.dead) this.damageEnemy(e, dmg);
     if (this.boss && !this.boss.entering && this.phase === 'boss') this.damageBoss(dmg / 3);
     this.salvos.push({ x: this.player.x, y: this.player.y, t: 0, life: 0.7, color: info.color, light: info.light });
     this.player.invuln = Math.max(this.player.invuln, 0.6);
     this.shake = 0.35;
-    this.addText(`Salve ${info.name.toLowerCase()} !`, this.player.x, this.player.y - 50, info.light, false, 20);
+    this.addText(`Salve ${info.name.toLowerCase()} !`, this.player.x, this.player.y - 50 * S, info.light, false, 20 * S);
   }
 
   private hurtPlayer(): void {
@@ -355,12 +380,12 @@ export class World {
     p.hp--;
     p.invuln = PLAYER_INVULN;
     this.shake = 0.4;
-    this.explode(p.x, p.y, 16, false);
+    this.explode(p.x, p.y, 16 * S, false);
     // Mercy: clear bullets right around the ship.
-    for (const b of this.eShots.items) if (b.active && dist2(b.x, b.y, p.x, p.y) < 110 * 110) b.active = false;
+    for (const b of this.eShots.items) if (b.active && dist2(b.x, b.y, p.x, p.y) < 110 * S * (110 * S)) b.active = false;
     if (p.hp <= 0) {
       p.dead = true;
-      this.explode(p.x, p.y, 60, true);
+      this.explode(p.x, p.y, 60 * S, true);
       this.setPhase('dying');
     }
   }
@@ -372,7 +397,7 @@ export class World {
     const hpScale = 1 + (this.level.difficulty - 1) * 0.5;
     const hp = stats ? Math.ceil(stats.hp * hpScale) : CARRIER_HP;
     const e: Enemy = {
-      kind, x, y, vx: 0, vy: 0, hp, maxHp: hp, r: stats?.radius ?? 26, t: 0,
+      kind, x, y, vx: 0, vy: 0, hp, maxHp: hp, r: (stats?.radius ?? 26) * S, t: 0,
       fireT: this.rng.range(0.6, 1.8), flash: 0, ground: stats?.ground ?? false,
       weapon: kind === 'carrier' ? weapon ?? this.rng.pick(WEAPON_TYPES) : null,
       dead: false, side, a: this.rng.range(0, Math.PI * 2), b: 0, c: 0,
@@ -401,12 +426,12 @@ export class World {
     e.dead = true;
     const pts = pointsFor(e.kind);
     this.score = addScore(this.score, pts);
-    this.addText(String(pts), e.x, e.y, '#ffffff', true, 2);
-    this.explode(e.x, e.y, e.r, e.r >= 28);
-    if (e.r >= 30) this.shake = Math.max(this.shake, 0.2);
+    this.addText(String(pts), e.x, e.y, '#ffffff', true, 2 * S);
+    this.explode(e.x, e.y, e.r, e.r >= 28 * S);
+    if (e.r >= 30 * S) this.shake = Math.max(this.shake, 0.2);
     if (e.kind === 'carrier' && e.weapon) {
       this.pickups.push({ kind: 'weapon', weapon: e.weapon, x: e.x, y: e.y, t: 0 });
-      if (this.rng.chance(0.06)) this.pickups.push({ kind: 'slot', weapon: null, x: e.x + 30, y: e.y, t: 0 });
+      if (this.rng.chance(0.06)) this.pickups.push({ kind: 'slot', weapon: null, x: e.x + 30 * S, y: e.y, t: 0 });
     }
   }
 
@@ -435,11 +460,19 @@ export class World {
 
   // ---------------------------------------------------------------- bullets & collisions
 
-  private nearestTarget(x: number, y: number): { x: number; y: number } | null {
-    let best: { x: number; y: number } | null = null;
+  /** True while a locked target can still be hit (alive, on screen, still in the world). */
+  private isValidTarget(t: Target | null): boolean {
+    if (!t || t.dead) return false;
+    if (t === this.boss) return !this.boss.entering && this.phase === 'boss';
+    const e = t as Enemy;
+    return e.y > -10 && e.y < PLAY_H && e.x > 0 && e.x < PLAY_W && this.enemies.includes(e);
+  }
+
+  private nearestTarget(x: number, y: number): Target | null {
+    let best: Target | null = null;
     let bd = Infinity;
     for (const e of this.enemies) {
-      if (e.dead || e.y < 0) continue;
+      if (e.dead || e.y < 0 || e.y > PLAY_H || e.x < 0 || e.x > PLAY_W) continue;
       const d = dist2(x, y, e.x, e.y);
       if (d < bd) { bd = d; best = e; }
     }
@@ -471,10 +504,11 @@ export class World {
         b.vx *= ns / s;
         b.vy *= ns / s;
         if (b.homing > 0) {
-          const t = this.nearestTarget(b.x, b.y);
-          if (t) this.steer(b, t.x, t.y, dt);
+          // Keep the locked target; retarget the nearest enemy when it is gone.
+          if (!this.isValidTarget(b.target)) b.target = this.nearestTarget(b.x, b.y);
+          if (b.target) this.steer(b, b.target.x, b.target.y, dt);
         }
-        if (this.rng.chance(0.6)) this.spawnParticle('smoke', b.x, b.y + 6, 0, 30, 0.35, 4, '#9fd0ff');
+        if (this.rng.chance(0.6)) this.spawnParticle('smoke', b.x, b.y + 6 * S, 0, 30, 0.35, 4 * b.scale, '#9fd0ff');
       }
       b.x += b.vx * dt;
       b.y += b.vy * dt;
@@ -505,30 +539,21 @@ export class World {
         const rr = e.r + b.r;
         if (dist2(b.x, b.y, e.x, e.y) < rr * rr) {
           this.damageEnemy(e, b.dmg);
-          this.spawnParticle('spark', b.x, b.y, this.rng.range(-60, 60), this.rng.range(-80, 20), 0.15, 4, '#fff6a0');
+          this.spawnParticle('spark', b.x, b.y, this.rng.range(-60, 60), this.rng.range(-80, 20), 0.15, 4 * S, '#fff6a0');
           b.active = false;
           break;
         }
       }
       if (b.active && boss && bossHit(boss, b.x, b.y, b.r)) {
         this.damageBoss(b.dmg);
-        this.spawnParticle('spark', b.x, b.y, this.rng.range(-60, 60), -40, 0.15, 4, '#fff6a0');
+        this.spawnParticle('spark', b.x, b.y, this.rng.range(-60, 60), -40, 0.15, 4 * S, '#fff6a0');
         b.active = false;
       }
     }
 
     if (this.laser.active) {
       const red = laserStats(this.inventory.level('red'));
-      if (red) {
-        const hw = this.laser.width / 2;
-        for (const e of this.enemies) {
-          if (!e.dead && e.y < p.y && e.y > -10 && Math.abs(e.x - p.x) < hw + e.r) this.damageEnemy(e, red.dps * dt);
-        }
-        if (boss && boss.y < p.y && Math.abs(boss.x - p.x) < hw + boss.halfW * 0.8) {
-          this.damageBoss(red.dps * dt);
-          if (this.rng.chance(0.3)) this.spawnParticle('spark', p.x, boss.y + boss.halfH * 0.5, this.rng.range(-90, 90), 40, 0.2, 4, '#ffc0c6');
-        }
-      }
+      if (red) this.applyLaser(red.dps * dt);
     }
 
     if (p.dead) return;
@@ -552,6 +577,30 @@ export class World {
     if (boss && this.phase === 'boss' && bossHit(boss, p.x, p.y, 0)) this.hurtPlayer();
   }
 
+  /** Red beam: damages the locked target, or everything in the column above the ship when nothing is locked. */
+  private applyLaser(amount: number): void {
+    const p = this.player;
+    const boss = this.boss;
+    if (!this.isValidTarget(this.laser.target)) this.laser.target = this.nearestTarget(p.x, p.y);
+    const t = this.laser.target;
+    if (t) {
+      this.laser.tx = t.x;
+      this.laser.ty = t.y;
+      if (t === boss) this.damageBoss(amount);
+      else this.damageEnemy(t as Enemy, amount);
+      if (this.rng.chance(0.3)) this.spawnParticle('spark', t.x, t.y, this.rng.range(-90, 90), this.rng.range(-90, 90), 0.2, 4 * S, '#ffc0c6');
+      if (t.dead) this.laser.target = null;
+      return;
+    }
+    this.laser.tx = p.x;
+    this.laser.ty = -20;
+    const hw = this.laser.width / 2;
+    for (const e of this.enemies) {
+      if (!e.dead && e.y < p.y && e.y > -10 && Math.abs(e.x - p.x) < hw + e.r) this.damageEnemy(e, amount);
+    }
+    if (boss && boss.y < p.y && Math.abs(boss.x - p.x) < hw + boss.halfW * 0.8) this.damageBoss(amount);
+  }
+
   // ---------------------------------------------------------------- pickups & effects
 
   private updatePickups(dt: number): void {
@@ -569,30 +618,30 @@ export class World {
     }
     if (!p.dead) {
       this.pickups = this.pickups.filter((pk) => {
-        if (dist2(pk.x, pk.y, p.x, p.y) > 34 * 34) return true;
+        if (dist2(pk.x, pk.y, p.x, p.y) > 34 * S * (34 * S)) return true;
         this.collect(pk);
         return false;
       });
     }
-    this.pickups = this.pickups.filter((pk) => pk.y < PLAY_H + 40);
+    this.pickups = this.pickups.filter((pk) => pk.y < PLAY_H + 40 * S);
   }
 
   private collect(pk: Pickup): void {
     const p = this.player;
     if (pk.kind === 'heart') {
       p.hp = Math.min(PLAYER_MAX_HP, p.hp + 1);
-      this.addText('Réparation +1', p.x, p.y - 40, '#ff8fa3', false, 20);
+      this.addText('Réparation +1', p.x, p.y - 40 * S, '#ff8fa3', false, 20 * S);
       return;
     }
     if (pk.kind === 'slot') {
       const ok = this.inventory.addSlot();
-      this.addText(ok ? 'Emplacement +1' : 'Emplacements max', p.x, p.y - 40, '#9ff5ff', false, 20);
+      this.addText(ok ? 'Emplacement +1' : 'Emplacements max', p.x, p.y - 40 * S, '#9ff5ff', false, 20 * S);
       return;
     }
     if (!pk.weapon) return;
     const info = WEAPONS[pk.weapon];
     const auto = this.inventory.add(pk.weapon);
-    this.addText(`${info.name} niv. ${this.inventory.level(pk.weapon)}`, p.x, p.y - 40, info.light, false, 20);
+    this.addText(`${info.name} niv. ${this.inventory.level(pk.weapon)}`, p.x, p.y - 40 * S, info.light, false, 20 * S);
     if (auto) this.triggerSalvo(auto);
   }
 
@@ -627,17 +676,17 @@ export class World {
     for (let i = 0; i < n; i++) {
       const a = this.rng.range(0, Math.PI * 2);
       const s = this.rng.range(30, 140) * (radius / 24);
-      this.spawnParticle('fire', x, y, Math.cos(a) * s, Math.sin(a) * s, this.rng.range(0.3, 0.7), this.rng.pick([4, 8, 8, 12]), this.rng.pick(fireColors));
+      this.spawnParticle('fire', x, y, Math.cos(a) * s, Math.sin(a) * s, this.rng.range(0.3, 0.7), this.rng.pick([4, 8, 8, 12]) * S, this.rng.pick(fireColors));
     }
     for (let i = 0; i < n / 2; i++) {
       const a = this.rng.range(0, Math.PI * 2);
-      this.spawnParticle('spark', x, y, Math.cos(a) * 260, Math.sin(a) * 260, 0.25, 4, '#ffffff');
+      this.spawnParticle('spark', x, y, Math.cos(a) * 260 * S, Math.sin(a) * 260 * S, 0.25, 4 * S, '#ffffff');
     }
     this.spawnParticle('ring', x, y, 0, 0, 0.4, radius * 1.6, '#ffe7a8');
     if (big) {
       for (let i = 0; i < 10; i++) {
         this.spawnParticle('smoke', x + this.rng.range(-radius, radius) * 0.6, y + this.rng.range(-radius, radius) * 0.6,
-          this.rng.range(-15, 15), this.rng.range(20, 60), this.rng.range(1.2, 2.2), this.rng.pick([8, 12, 16]), '#6e1a26');
+          this.rng.range(-15, 15), this.rng.range(20, 60), this.rng.range(1.2, 2.2), this.rng.pick([8, 12, 16]) * S, '#6e1a26');
       }
     }
   }

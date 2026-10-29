@@ -46,7 +46,8 @@ export class SpriteBank {
   private flashes = new Map<string, Sprite>();
   private sources = new Map<string, { rows: string[]; palette: Record<string, string> }>();
 
-  constructor() {
+  /** @param px size of one art pixel in logical px (PX for menus, ENTITY_PX in game). */
+  constructor(readonly px = PX) {
     for (const [name, d] of Object.entries(SPRITES)) this.add(name, expandRows(d), d.palette);
 
     for (const t of WEAPON_TYPES) {
@@ -79,7 +80,7 @@ export class SpriteBank {
 
   private add(name: string, rows: string[], palette: Record<string, string>): void {
     this.sources.set(name, { rows, palette });
-    this.sprites.set(name, buildSprite(rows, palette));
+    this.sprites.set(name, buildSprite(rows, palette, this.px));
   }
 
   get(name: string): Sprite {
@@ -94,7 +95,7 @@ export class SpriteBank {
     if (!s) {
       const src = this.sources.get(name);
       if (!src) throw new Error(`Unknown sprite ${name}`);
-      s = buildSprite(src.rows, whiten(src.palette));
+      s = buildSprite(src.rows, whiten(src.palette), this.px);
       this.flashes.set(name, s);
     }
     return s;

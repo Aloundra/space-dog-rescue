@@ -20,10 +20,22 @@ export interface Bullet {
   /** Turn rate in rad/s toward the target (0 = straight). */
   homing: number;
   bounce: boolean;
+  /** Visual scale of the projectile sprite. */
+  scale: number;
+  /** Locked target for homing player missiles. */
+  target: Target | null;
+}
+
+/** Anything a player weapon can lock on (enemy or boss). */
+export interface Target {
+  x: number;
+  y: number;
+  dead: boolean;
 }
 
 export const makeBullet = (): Bullet => ({
   active: false, x: 0, y: 0, vx: 0, vy: 0, r: 4, dmg: 1, style: 'shot', t: 0, life: 3, homing: 0, bounce: false,
+  scale: 1, target: null,
 });
 
 export type EnemyId = EnemyKind | 'carrier';

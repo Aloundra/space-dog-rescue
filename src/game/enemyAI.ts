@@ -1,5 +1,5 @@
 // Per-kind enemy behaviours. Each function moves the enemy and may fire through the context.
-import { PLAY_H, PLAY_W, SCROLL_SPEED } from '../config';
+import { GAME_SCALE as S, PLAY_H, PLAY_W, SCROLL_SPEED } from '../config';
 import { angleTo, type Rng } from '../core/math';
 import type { BulletStyle, Enemy, EnemyId } from './types';
 
@@ -142,8 +142,8 @@ const behaviours: Record<EnemyId, Behaviour> = {
     else if (e.t >= 9) e.y += 90 * dt;
     e.x += Math.sin(e.t * 1.2 + e.a) * 70 * dt;
     if (cooldown(e, dt, 2.6, c)) {
-      c.fire('eMissile', e.x - 16, e.y + 10, Math.PI / 2, spd(c, 150), { homing: 1.6, life: 4 });
-      c.fire('eMissile', e.x + 16, e.y + 10, Math.PI / 2, spd(c, 150), { homing: 1.6, life: 4 });
+      c.fire('eMissile', e.x - 16 * S, e.y + 10 * S, Math.PI / 2, spd(c, 150), { homing: 1.6, life: 4 });
+      c.fire('eMissile', e.x + 16 * S, e.y + 10 * S, Math.PI / 2, spd(c, 150), { homing: 1.6, life: 4 });
     }
   },
   armoredRect(e, dt, c) {
@@ -184,9 +184,9 @@ const behaviours: Record<EnemyId, Behaviour> = {
   missileRect(e, dt, c) {
     e.y += 45 * dt;
     if (cooldown(e, dt, 2.8, c)) {
-      for (const dx of [-26, 26]) {
-        c.fire('eMissile', e.x + dx, e.y - 16, Math.PI / 2 + dx / 120, spd(c, 140), { homing: 1.4, life: 4.5 });
-        c.fire('eMissile', e.x + dx, e.y + 16, Math.PI / 2 + dx / 80, spd(c, 160), { homing: 1.4, life: 4.5 });
+      for (const dx of [-26 * S, 26 * S]) {
+        c.fire('eMissile', e.x + dx, e.y - 16 * S, Math.PI / 2 + dx / (120 * S), spd(c, 140), { homing: 1.4, life: 4.5 });
+        c.fire('eMissile', e.x + dx, e.y + 16 * S, Math.PI / 2 + dx / (80 * S), spd(c, 160), { homing: 1.4, life: 4.5 });
       }
       fan(e, c, 'eSquare', 4, 0.7, 170);
     }
@@ -222,7 +222,7 @@ export function updateEnemy(e: Enemy, dt: number, c: AIContext): void {
 }
 
 export function isOffscreen(e: Enemy): boolean {
-  if (e.y > H + 90) return true;
-  if (e.t > 1.5 && (e.x < -140 || e.x > W + 140)) return true;
+  if (e.y > H + 90 * S) return true;
+  if (e.t > 1.5 && (e.x < -140 * S || e.x > W + 140 * S)) return true;
   return e.y < -400;
 }

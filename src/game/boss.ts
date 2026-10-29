@@ -1,5 +1,5 @@
 // Boss creation and attack patterns.
-import { PLAY_W, PX } from '../config';
+import { ENTITY_PX, GAME_SCALE as S, PLAY_W } from '../config';
 import { angleTo } from '../core/math';
 import type { EnemyKind } from '../data/enemies';
 import type { BossDef, BossPattern } from '../data/levels';
@@ -14,8 +14,8 @@ export const BOSS_REST_Y = 170;
 
 export function createBoss(def: BossDef, index: number): Boss {
   // Generated sprite: (halfW + 1) * 2 - 1 columns, h + 5 rows (see bossHalfRows).
-  const halfW = ((def.halfW * 2 + 1) * PX) / 2;
-  const halfH = ((def.h + 5) * PX) / 2;
+  const halfW = ((def.halfW * 2 + 1) * ENTITY_PX) / 2;
+  const halfH = ((def.h + 5) * ENTITY_PX) / 2;
   return {
     def, index, x: PLAY_W / 2, y: -halfH, hp: def.hp, maxHp: def.hp, t: 0,
     timers: def.patterns.map((p, i) => p.interval * (0.5 + i * 0.3)),
@@ -50,8 +50,8 @@ function runPattern(b: Boss, p: BossPattern, c: BossContext): void {
       break;
     case 'missiles':
       for (let i = 0; i < p.count; i++) {
-        const dx = (i - (p.count - 1) / 2) * 40;
-        c.fire('eMissile', ox + dx, oy, Math.PI / 2 + dx / 200, sp, { homing: 1.5, life: 4.5 });
+        const dx = (i - (p.count - 1) / 2) * 40 * S;
+        c.fire('eMissile', ox + dx, oy, Math.PI / 2 + dx / (200 * S), sp, { homing: 1.5, life: 4.5 });
       }
       break;
     case 'curtain':
@@ -61,7 +61,7 @@ function runPattern(b: Boss, p: BossPattern, c: BossContext): void {
       }
       break;
     case 'minions':
-      if (p.minion) for (let i = 0; i < p.count; i++) c.spawnMinion(p.minion, ox + (i - (p.count - 1) / 2) * 70, b.y);
+      if (p.minion) for (let i = 0; i < p.count; i++) c.spawnMinion(p.minion, ox + (i - (p.count - 1) / 2) * 70 * S, b.y);
       break;
   }
 }

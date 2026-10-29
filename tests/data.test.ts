@@ -4,7 +4,9 @@ import { ENEMY_KINDS } from '../src/data/enemies';
 import { LEVELS } from '../src/data/levels';
 import { WEAPON_TYPES } from '../src/data/weapons';
 import { expandWaves } from '../src/game/spawner';
-import { baseShot, laserStats, missileStats, salvoDamage, sideAngles, speedMultiplier, violetBurst } from '../src/game/weaponStats';
+import {
+  baseShot, laserStats, levelMultiplier, missileStats, salvoDamage, sideShots, speedMultiplier, violetBurst,
+} from '../src/game/weaponStats';
 import { bossHalfRows, sawBlade, sphere, spiralDisc, tankRows, turretRows } from '../src/render/procedural';
 import { BASE_PALETTE, SPRITES, expandRows } from '../src/render/spriteData';
 
@@ -15,14 +17,58 @@ describe('weapon levels', () => {
     expect(speedMultiplier(2)).toBeGreaterThan(speedMultiplier(1));
     expect(violetBurst(0)).toBeNull();
     expect(violetBurst(2)!.count).toBeGreaterThan(violetBurst(1)!.count);
-    expect(violetBurst(2)!.life).toBeGreaterThan(violetBurst(1)!.life);
-    expect(sideAngles(0)).toEqual([]);
-    expect(sideAngles(1)).toEqual([0, Math.PI]);
-    expect(sideAngles(3).length).toBeGreaterThan(sideAngles(2).length);
-    expect(missileStats(1)!.homing).toBe(0);
+    expect(sideShots(0, 0)).toBeNull();
+    expect(sideShots(3, 0)!.angles.length).toBeGreaterThan(sideShots(2, 0)!.angles.length);
     expect(missileStats(3)!.count).toBe(3);
     expect(laserStats(2)!.dps).toBeGreaterThan(laserStats(1)!.dps);
     for (const t of WEAPON_TYPES) expect(salvoDamage(t, 2)).toBeGreaterThan(salvoDamage(t, 1));
+  });
+});
+
+describe('weapon level growth (+25% damage and size per level, -25% when a level is lost)', () => {
+  it('multiplier is linear', () => {
+    expect(levelMultiplier(1)).toBe(1);
+    expect(levelMultiplier(2)).toBe(1.25);
+    expect(levelMultiplier(3)).toBe(1.5);
+    expect(levelMultiplier(4)).toBe(1.75);
+  });
+
+  it('applies to damage and projectile size of every projectile weapon', () => {
+    const pairs = [
+      [violetBurst(1)!, violetBurst(2)!],
+      [sideShots(1, 0)!, sideShots(2, 0)!],
+      [missileStats(1)!, missileStats(2)!],
+    ];
+    for (const [a, b] of pairs) {
+      expect(b.damage / a.damage).toBeCloseTo(1.25);
+      expect(b.radius / a.radius).toBeCloseTo(1.25);
+      expect(b.scale / a.scale).toBeCloseTo(1.25);
+    }
+    // Losing a level: back from level 3 to 2 removes 25% of base.
+    expect(missileStats(3)!.damage - missileStats(2)!.damage).toBeCloseTo(missileStats(1)!.damage * 0.25);
+    expect(baseShot(1).damage / baseShot(0).damage).toBeCloseTo(1.25);
+    expect(baseShot(2).radius / baseShot(0).radius).toBeCloseTo(1.5);
+    expect(laserStats(2)!.dps / laserStats(1)!.dps).toBeCloseTo(1.25);
+    expect(laserStats(2)!.width / laserStats(1)!.width).toBeCloseTo(1.25);
+  });
+});
+
+describe('yellow side shots follow the vertical arrows', () => {
+  it('level 1: horizontal, +45 deg with down, -45 deg with up', () => {
+    expect(sideShots(1, 0)!.angles).toEqual([0, Math.PI]);
+    const down = sideShots(1, 1)!.angles;
+    expect(down[0]).toBeCloseTo(Math.PI / 4);
+    expect(down[1]).toBeCloseTo((3 * Math.PI) / 4);
+    const up = sideShots(1, -1)!.angles;
+    expect(up[0]).toBeCloseTo(-Math.PI / 4);
+    expect(up[1]).toBeCloseTo((3 * Math.PI) / 4 + Math.PI / 2);
+  });
+});
+
+describe('violet balls cross the whole screen', () => {
+  it('lifetime covers the screen diagonal at the slowest speed', () => {
+    const v = violetBurst(1)!;
+    expect(v.speed * 0.7 * v.life).toBeGreaterThan(Math.hypot(760, 860));
   });
 });
 

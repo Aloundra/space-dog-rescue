@@ -1,5 +1,5 @@
 // Application state machine: title, how-to, high scores, game, pause, game over, name entry, victory.
-import { PLAY_H, PLAY_W, PLAY_X, PLAY_Y, VIEW_H, VIEW_W } from '../config';
+import { ENTITY_PX, PLAY_H, PLAY_W, PLAY_X, PLAY_Y, VIEW_H, VIEW_W } from '../config';
 import { KEYS, type Input } from '../core/input';
 import { ENEMY_KINDS, ENEMY_POINTS, ENEMY_STATS } from '../data/enemies';
 import { LEVELS } from '../data/levels';
@@ -7,7 +7,7 @@ import { WEAPONS, WEAPON_TYPES } from '../data/weapons';
 import { formatScore } from '../game/score';
 import { World, type DebugOptions } from '../game/world';
 import { drawFrame, drawHud } from '../render/hud';
-import { drawSprite, type SpriteBank } from '../render/sprites';
+import { SpriteBank, drawSprite } from '../render/sprites';
 import { drawDigits, drawText } from '../render/text';
 import { WorldRenderer } from '../render/worldRenderer';
 import {
@@ -32,7 +32,8 @@ export class App {
   private lastFrame = performance.now();
 
   constructor(private ctx: CanvasRenderingContext2D, private input: Input, private bank: SpriteBank, private debug: DebugOptions) {
-    this.renderer = new WorldRenderer(bank);
+    // In-game entities use a 1.5x sprite bank; menus keep `bank` unchanged.
+    this.renderer = new WorldRenderer(new SpriteBank(ENTITY_PX));
     this.scores = loadScores(this.storage);
     if (debug.startLevel !== undefined || debug.weapons || debug.boss) this.startGame();
   }
@@ -221,7 +222,7 @@ export class App {
     const lines = [
       'Flèches : déplacer le vaisseau      Espace : tirer',
       'Ctrl ou Shift : sacrifier la dernière arme = salve dévastatrice',
-      '3 armes maximum (des options ajoutent des emplacements).',
+      '5 armes maximum (des options ajoutent des emplacements).',
       "Au-delà, l'arme la plus ancienne est sacrifiée automatiquement !",
       'Barre de vie : 3 PV. À 0 PV, la partie est terminée.   Échap/P : pause',
     ];

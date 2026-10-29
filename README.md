@@ -26,7 +26,7 @@ npm test           # tests unitaires + simulation headless d'une partie complèt
 
 - **Barre de vie : 3 PV**, pas de vies. À 0 PV, la partie est terminée.
 - Détruisez les vaisseaux en forme de **manette** pour obtenir l'arme de leur couleur.
-- **3 armes maximum** (chaque boss lâche un « +1 emplacement », jusqu'à 5). Au-delà, l'arme la plus ancienne est sacrifiée automatiquement (et déclenche sa salve).
+- **5 armes maximum** (chaque boss lâche un « +1 emplacement », jusqu'à 8). Au-delà, l'arme la plus ancienne est sacrifiée automatiquement (et déclenche sa salve).
 - Plusieurs exemplaires d'une même arme = arme plus puissante (niveau max 4).
 
 | Arme | Effet |
