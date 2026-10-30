@@ -193,8 +193,8 @@ export class App {
     const ctx = this.ctx;
     const cx = PLAY_W / 2;
     const wobble = Math.round(Math.sin(this.time * 2) * 6);
-    drawText(ctx, 'IRON', cx, 150 + wobble, 88, '#e2f6ff', 'center', '#1f3f9a');
-    drawText(ctx, 'CHOUQUETTE', cx, 240 + wobble, 82, '#ffe25a', 'center', '#a12c6a');
+    drawText(ctx, 'SPACE DOG', cx, 150 + wobble, 88, '#e2f6ff', 'center', '#1f3f9a');
+    drawText(ctx, 'RESCUE', cx, 240 + wobble, 82, '#ffe25a', 'center', '#a12c6a');
     drawText(ctx, 'Rescue your dog, kidnapped by enemy ships!', cx, 310, 20, '#e2c2ff');
     drawSprite(ctx, this.bank.get('player'), cx - 70, 400 + Math.sin(this.time * 3) * 8, 0, 1.5, 1.5);
     drawSprite(ctx, this.bank.get('dog'), cx + 70, 400 + Math.abs(Math.sin(this.time * 5)) * -10, 0, 1.5, 1.5);
