@@ -180,4 +180,20 @@ describe('World simulation', () => {
     w.update(STEP, input);
     expect(w.laser.beams).toHaveLength(2);
   });
+
+  it('violet balls leave from the nose inside a 90 deg cone in front of the ship', () => {
+    const w = new World(9, { weapons: ['violet', 'violet', 'violet'], god: true });
+    const input = new FakeInput();
+    w.phase = 'waves';
+    input.down.add('Space');
+    w.update(STEP, input);
+    const balls = w.pShots.items.filter((b) => b.active && b.style === 'violet');
+    expect(balls.length).toBeGreaterThan(10);
+    for (const b of balls) {
+      const a = Math.atan2(b.vy, b.vx);
+      expect(a).toBeGreaterThanOrEqual(-Math.PI / 2 - Math.PI / 4 - 1e-9);
+      expect(a).toBeLessThanOrEqual(-Math.PI / 2 + Math.PI / 4 + 1e-9);
+      expect(b.y).toBeLessThan(w.player.y);
+    }
+  });
 });

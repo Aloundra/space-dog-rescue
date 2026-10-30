@@ -52,15 +52,17 @@ export interface VioletBurst {
   damage: number;
   radius: number;
   scale: number;
+  /** Full aperture (radians) of the cone in front of the ship. */
+  cone: number;
 }
 
-/** Violet: balls in every direction, travelling across the whole screen. More levels = more balls. */
+/** Violet: balls fired at random inside a 90 deg cone in front of the ship, crossing the whole screen. */
 export function violetBurst(violet: number): VioletBurst | null {
   if (violet <= 0) return null;
   const m = levelMultiplier(violet);
   return {
     interval: 0.42, count: 2 + 6 * violet, speed: 380, life: 10, damage: 0.9 * m,
-    radius: 5 * GAME_SCALE * m, scale: GAME_SCALE * m,
+    radius: 5 * GAME_SCALE * m, scale: GAME_SCALE * m, cone: Math.PI / 2,
   };
 }
 

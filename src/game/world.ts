@@ -304,8 +304,9 @@ export class World {
       if (p.violetT <= 0) {
         p.violetT += v.interval;
         for (let i = 0; i < v.count; i++) {
-          const a = this.rng.range(0, Math.PI * 2);
-          const bl = this.firePlayer('violet', p.x, p.y, a, v.speed * this.rng.range(0.7, 1.1), v.damage, v.radius, v.scale);
+          // Random direction within a 90 deg cone in front of the ship, fired from the nose.
+          const a = -Math.PI / 2 + this.rng.range(-v.cone / 2, v.cone / 2);
+          const bl = this.firePlayer('violet', p.x, p.y - 26 * S, a, v.speed * this.rng.range(0.7, 1.1), v.damage, v.radius, v.scale);
           if (bl) bl.life = v.life;
         }
       }

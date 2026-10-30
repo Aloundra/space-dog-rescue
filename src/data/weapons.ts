@@ -16,7 +16,7 @@ export interface WeaponInfo {
 export const WEAPONS: Record<WeaponType, WeaponInfo> = {
   violet: {
     name: 'Violette',
-    description: 'Petites boules violettes dans tous les sens',
+    description: 'Petites boules violettes en gerbe devant le vaisseau',
     color: '#b066ff', light: '#e2c2ff', dark: '#5d2a9e', salvoDamage: 30,
   },
   pink: {
