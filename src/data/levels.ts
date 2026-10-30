@@ -67,7 +67,7 @@ const p = (type: BossPatternType, interval: number, count: number, speed: number
 
 export const LEVELS: LevelDef[] = [
   {
-    name: 'Nébuleuse Violette',
+    name: 'Violet Nebula',
     nebula: ['#140a2e', '#2a1452', '#46207a', '#6b35a3'],
     difficulty: 1,
     waves: [
@@ -101,7 +101,7 @@ export const LEVELS: LevelDef[] = [
       w(74, 'turret', 2, 'line', 0.5, { spread: 0.4 }),
     ],
     boss: {
-      name: 'Croiseur Gourmand',
+      name: 'Greedy Cruiser',
       hp: 320, points: 10_000, seed: 11, halfW: 14, h: 20, holdsDog: false,
       colors: { main: '#e8e4f4', light: '#ffffff', dark: '#7b6f99', accent: '#ffb02e' },
       patterns: [p('spread', 1.4, 5, 170), p('aimed', 0.9, 1, 230)],
@@ -109,7 +109,7 @@ export const LEVELS: LevelDef[] = [
     },
   },
   {
-    name: 'Ceinture Indigo',
+    name: 'Indigo Belt',
     nebula: ['#0a0c2e', '#16205a', '#233486', '#3a52b0'],
     difficulty: 1.2,
     waves: [
@@ -145,7 +145,7 @@ export const LEVELS: LevelDef[] = [
       w(74, 'turretPlus', 2, 'line', 0.5, { spread: 0.3 }),
     ],
     boss: {
-      name: 'Forteresse Indigo',
+      name: 'Indigo Fortress',
       hp: 520, points: 15_000, seed: 23, halfW: 15, h: 22, holdsDog: false,
       colors: { main: '#9fb4e8', light: '#e6efff', dark: '#3c4f8c', accent: '#5be36a' },
       patterns: [p('spiral', 0.12, 2, 150), p('missiles', 2.4, 2, 160)],
@@ -153,7 +153,7 @@ export const LEVELS: LevelDef[] = [
     },
   },
   {
-    name: 'Abysses Magenta',
+    name: 'Magenta Abyss',
     nebula: ['#1e0822', '#3d0f45', '#651a6a', '#93308f'],
     difficulty: 1.4,
     waves: [
@@ -189,7 +189,7 @@ export const LEVELS: LevelDef[] = [
       w(76, 'tankGreen', 1, 'single', 0.3),
     ],
     boss: {
-      name: 'Méduse de Fer',
+      name: 'Iron Jellyfish',
       hp: 750, points: 25_000, seed: 47, halfW: 16, h: 24, holdsDog: false,
       colors: { main: '#ff9e8a', light: '#ffe0d6', dark: '#a8473f', accent: '#ffd93b' },
       patterns: [p('curtain', 1.8, 9, 120), p('aimed', 0.6, 3, 250), p('missiles', 3, 3, 170)],
@@ -197,7 +197,7 @@ export const LEVELS: LevelDef[] = [
     },
   },
   {
-    name: 'Repaire du Ravisseur',
+    name: "Kidnapper's Lair",
     nebula: ['#08061a', '#1b1040', '#33186a', '#552a8e'],
     difficulty: 1.5,
     waves: [
@@ -233,7 +233,7 @@ export const LEVELS: LevelDef[] = [
       w(74, 'tankGreen', 2, 'line', 0.5, { spread: 0.8 }),
     ],
     boss: {
-      name: 'Le Ravisseur',
+      name: 'The Kidnapper',
       hp: 950, points: 50_000, seed: 97, halfW: 18, h: 26, holdsDog: true,
       colors: { main: '#c9c3dd', light: '#ffffff', dark: '#4d4466', accent: '#ff3b4e' },
       patterns: [p('spread', 1.4, 9, 180), p('spiral', 0.13, 2, 150), p('missiles', 3, 3, 170)],

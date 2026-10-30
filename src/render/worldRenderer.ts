@@ -411,7 +411,7 @@ export class WorldRenderer {
       case 'intro': {
         const a = Math.min(1, w.phaseT * 3, (2.5 - w.phaseT) * 3);
         ctx.globalAlpha = Math.max(0, a);
-        drawText(ctx, `NIVEAU ${w.levelIndex + 1}`, cx, cy, 52, '#ffe25a');
+        drawText(ctx, `LEVEL ${w.levelIndex + 1}`, cx, cy, 52, '#ffe25a');
         drawText(ctx, w.level.name, cx, cy + 56, 30, '#e2f6ff');
         ctx.globalAlpha = 1;
         break;
@@ -420,19 +420,19 @@ export class WorldRenderer {
         if (Math.floor(w.phaseT * 4) % 2 === 0) {
           ctx.fillStyle = 'rgba(232,52,78,0.22)';
           ctx.fillRect(0, cy - 50, PLAY_W, 100);
-          drawText(ctx, 'ATTENTION !', cx, cy - 12, 52, '#ff4f7b');
+          drawText(ctx, 'WARNING!', cx, cy - 12, 52, '#ff4f7b');
           drawText(ctx, w.level.boss.name, cx, cy + 32, 26, '#ffe7a8');
         }
         break;
       case 'clear': {
-        drawText(ctx, 'NIVEAU TERMINÉ !', cx, cy, 46, '#ffe25a');
-        drawText(ctx, `Bonus de fin de niveau : ${w.lastBonus}`, cx, cy + 56, 26, '#e2f6ff');
-        drawText(ctx, `Score : ${formatScore(w.score)}`, cx, cy + 96, 26, '#e2f6ff');
+        drawText(ctx, 'LEVEL CLEARED!', cx, cy, 46, '#ffe25a');
+        drawText(ctx, `Level bonus: ${w.lastBonus}`, cx, cy + 56, 26, '#e2f6ff');
+        drawText(ctx, `Score: ${formatScore(w.score)}`, cx, cy + 96, 26, '#e2f6ff');
         break;
       }
       case 'rescue':
-        drawText(ctx, 'Votre chien est libre !', cx, cy, 40, '#ffe25a');
-        drawText(ctx, `Bonus final : ${w.lastBonus}`, cx, cy + 50, 26, '#e2f6ff');
+        drawText(ctx, 'Your dog is free!', cx, cy, 40, '#ffe25a');
+        drawText(ctx, `Final bonus: ${w.lastBonus}`, cx, cy + 50, 26, '#e2f6ff');
         break;
       default:
         break;

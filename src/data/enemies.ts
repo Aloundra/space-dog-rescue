@@ -46,22 +46,22 @@ export interface EnemyStats {
 }
 
 export const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
-  basic: { name: 'Ennemi de base', hp: 2, radius: 18, ground: false },
-  secondary: { name: 'Ennemi secondaire', hp: 3, radius: 18, ground: false },
-  green: { name: 'Ennemi vert', hp: 5, radius: 20, ground: false },
-  marbleBomb: { name: 'Bombe à billes', hp: 7, radius: 22, ground: false },
-  robotRabbit: { name: 'Lapin robot', hp: 7, radius: 20, ground: false },
-  turret: { name: 'Tourelle de base', hp: 12, radius: 24, ground: true },
-  magnet: { name: 'Aimant', hp: 14, radius: 24, ground: false },
-  vBall: { name: 'Boules arrivant en V', hp: 4, radius: 16, ground: false },
-  missileLauncher: { name: 'Lance-missiles', hp: 18, radius: 26, ground: false },
-  armoredRect: { name: 'Rectangle blindé', hp: 34, radius: 30, ground: false },
-  turretPlus: { name: 'Tourelle améliorée', hp: 30, radius: 28, ground: true },
-  tank: { name: 'Tank de base', hp: 45, radius: 32, ground: true },
-  tankGreen: { name: 'Tank vert', hp: 65, radius: 34, ground: true },
-  missileRect: { name: 'Rectangle à missile', hp: 75, radius: 34, ground: false },
-  grinder: { name: 'Disqueuse', hp: 70, radius: 34, ground: false },
-  tankRed: { name: 'Tank rouge', hp: 110, radius: 38, ground: true },
+  basic: { name: 'Basic enemy', hp: 2, radius: 18, ground: false },
+  secondary: { name: 'Secondary enemy', hp: 3, radius: 18, ground: false },
+  green: { name: 'Green enemy', hp: 5, radius: 20, ground: false },
+  marbleBomb: { name: 'Marble bomb', hp: 7, radius: 22, ground: false },
+  robotRabbit: { name: 'Robot rabbit', hp: 7, radius: 20, ground: false },
+  turret: { name: 'Basic turret', hp: 12, radius: 24, ground: true },
+  magnet: { name: 'Magnet', hp: 14, radius: 24, ground: false },
+  vBall: { name: 'V-formation balls', hp: 4, radius: 16, ground: false },
+  missileLauncher: { name: 'Missile launcher', hp: 18, radius: 26, ground: false },
+  armoredRect: { name: 'Armored rectangle', hp: 34, radius: 30, ground: false },
+  turretPlus: { name: 'Upgraded turret', hp: 30, radius: 28, ground: true },
+  tank: { name: 'Basic tank', hp: 45, radius: 32, ground: true },
+  tankGreen: { name: 'Green tank', hp: 65, radius: 34, ground: true },
+  missileRect: { name: 'Missile rectangle', hp: 75, radius: 34, ground: false },
+  grinder: { name: 'Grinder', hp: 70, radius: 34, ground: false },
+  tankRed: { name: 'Red tank', hp: 110, radius: 38, ground: true },
 };
 
 export const ENEMY_KINDS = Object.keys(ENEMY_POINTS) as EnemyKind[];

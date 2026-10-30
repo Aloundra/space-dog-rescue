@@ -381,7 +381,7 @@ export class World {
     this.salvos.push({ x: this.player.x, y: this.player.y, t: 0, life: 0.7, color: info.color, light: info.light });
     this.player.invuln = Math.max(this.player.invuln, 0.6);
     this.shake = 0.35;
-    this.addText(`Salve ${info.name.toLowerCase()} !`, this.player.x, this.player.y - 50 * S, info.light, false, 20 * S);
+    this.addText(`${info.name} salvo!`, this.player.x, this.player.y - 50 * S, info.light, false, 20 * S);
   }
 
   private hurtPlayer(): void {
@@ -658,18 +658,18 @@ export class World {
     const p = this.player;
     if (pk.kind === 'heart') {
       p.hp = Math.min(PLAYER_MAX_HP, p.hp + 1);
-      this.addText('Réparation +1', p.x, p.y - 40 * S, '#ff8fa3', false, 20 * S);
+      this.addText('Repair +1', p.x, p.y - 40 * S, '#ff8fa3', false, 20 * S);
       return;
     }
     if (pk.kind === 'slot') {
       const ok = this.inventory.addSlot();
-      this.addText(ok ? 'Emplacement +1' : 'Emplacements max', p.x, p.y - 40 * S, '#9ff5ff', false, 20 * S);
+      this.addText(ok ? 'Slot +1' : 'Slots maxed', p.x, p.y - 40 * S, '#9ff5ff', false, 20 * S);
       return;
     }
     if (!pk.weapon) return;
     const info = WEAPONS[pk.weapon];
     const auto = this.inventory.add(pk.weapon);
-    this.addText(`${info.name} niv. ${this.inventory.level(pk.weapon)}`, p.x, p.y - 40 * S, info.light, false, 20 * S);
+    this.addText(`${info.name} lv. ${this.inventory.level(pk.weapon)}`, p.x, p.y - 40 * S, info.light, false, 20 * S);
     if (auto) this.triggerSalvo(auto);
   }
 

@@ -15,33 +15,33 @@ export interface WeaponInfo {
 
 export const WEAPONS: Record<WeaponType, WeaponInfo> = {
   violet: {
-    name: 'Violette',
-    description: 'Petites boules violettes en gerbe devant le vaisseau',
+    name: 'Violet',
+    description: 'Small violet balls sprayed ahead of the ship',
     color: '#b066ff', light: '#e2c2ff', dark: '#5d2a9e', salvoDamage: 30,
   },
   pink: {
-    name: 'Rose',
-    description: 'Accélère le vaisseau',
+    name: 'Pink',
+    description: 'Speeds up the ship',
     color: '#ff6fb5', light: '#ffc6e2', dark: '#a12c6a', salvoDamage: 22,
   },
   green: {
-    name: 'Verte',
-    description: "Améliore l'arme de base",
+    name: 'Green',
+    description: 'Upgrades the base gun',
     color: '#5be36a', light: '#c4ffc9', dark: '#23813a', salvoDamage: 28,
   },
   yellow: {
-    name: 'Jaune',
-    description: 'Tire des deux côtés à la fois',
+    name: 'Yellow',
+    description: 'Fires to both sides at once',
     color: '#ffd93b', light: '#fff4b8', dark: '#a67c0b', salvoDamage: 28,
   },
   blue: {
-    name: 'Bleue',
-    description: 'Lance des missiles',
+    name: 'Blue',
+    description: 'Launches homing missiles',
     color: '#3f8cff', light: '#bcd8ff', dark: '#1c3f99', salvoDamage: 34,
   },
   red: {
-    name: 'Rouge',
-    description: 'Laser en faisceau électrique',
+    name: 'Red',
+    description: 'Electric laser beam',
     color: '#ff3b4e', light: '#ffc0c6', dark: '#9e1426', salvoDamage: 40,
   },
 };

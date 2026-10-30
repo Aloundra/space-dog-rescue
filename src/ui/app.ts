@@ -16,7 +16,7 @@ import {
 
 type Screen = 'title' | 'howto' | 'scores' | 'game' | 'pause' | 'gameover' | 'victory' | 'nameEntry';
 
-const MENU = ['Jouer', 'Comment jouer', 'Meilleurs scores'] as const;
+const MENU = ['Play', 'How to play', 'High scores'] as const;
 
 export class App {
   private screen: Screen = 'title';
@@ -195,7 +195,7 @@ export class App {
     const wobble = Math.round(Math.sin(this.time * 2) * 6);
     drawText(ctx, 'IRON', cx, 150 + wobble, 88, '#e2f6ff', 'center', '#1f3f9a');
     drawText(ctx, 'CHOUQUETTE', cx, 240 + wobble, 82, '#ffe25a', 'center', '#a12c6a');
-    drawText(ctx, 'Retrouvez votre chien enlevé par les vaisseaux ennemis !', cx, 310, 20, '#e2c2ff');
+    drawText(ctx, 'Rescue your dog, kidnapped by enemy ships!', cx, 310, 20, '#e2c2ff');
     drawSprite(ctx, this.bank.get('player'), cx - 70, 400 + Math.sin(this.time * 3) * 8, 0, 1.5, 1.5);
     drawSprite(ctx, this.bank.get('dog'), cx + 70, 400 + Math.abs(Math.sin(this.time * 5)) * -10, 0, 1.5, 1.5);
     WEAPON_TYPES.forEach((t, i) => {
@@ -211,32 +211,32 @@ export class App {
       }
       drawText(ctx, item, cx, y, sel ? 36 : 30, sel ? '#ffffff' : '#9fb4e8');
     });
-    drawText(ctx, '↑ ↓ pour choisir, Entrée pour valider', cx, 800, 18, '#bfeeff');
+    drawText(ctx, '↑ ↓ to choose, Enter to confirm', cx, 800, 18, '#bfeeff');
   }
 
   private drawHowTo(): void {
     const ctx = this.ctx;
     this.dim(0.7);
     const cx = PLAY_W / 2;
-    drawText(ctx, 'Comment jouer ?', cx, 44, 38, '#ffe25a');
+    drawText(ctx, 'How to play', cx, 44, 38, '#ffe25a');
     const lines = [
-      'Flèches : déplacer le vaisseau      Espace : tirer',
-      'Ctrl ou Shift : sacrifier la dernière arme = salve dévastatrice',
-      '5 armes maximum (des options ajoutent des emplacements).',
-      "Au-delà, l'arme la plus ancienne est sacrifiée automatiquement !",
-      'Barre de vie : 3 PV. À 0 PV, la partie est terminée.   Échap/P : pause',
+      'Arrows: move the ship      Space: fire',
+      'Ctrl or Shift: sacrifice the latest weapon = devastating salvo',
+      '5 weapons max (bonuses add extra slots).',
+      'Beyond that, the oldest weapon is sacrificed automatically!',
+      'Health bar: 3 HP. At 0 HP, the game is over.   Esc/P: pause',
     ];
     lines.forEach((l, i) => drawText(ctx, l, cx, 92 + i * 28, 17, '#e2f6ff', 'center', '#120c2a', 'normal'));
 
-    drawText(ctx, 'Les armes (détruisez les vaisseaux « manette »)', cx, 246, 21, '#ffc6e2');
+    drawText(ctx, 'Weapons (destroy the "gamepad" ships)', cx, 246, 21, '#ffc6e2');
     WEAPON_TYPES.forEach((t, i) => {
       const y = 282 + i * 34;
       drawSprite(ctx, this.bank.get(`pickup_${t}`), 70, y, 0, 0.8, 0.8);
-      drawText(ctx, `${WEAPONS[t].name} : ${WEAPONS[t].description}`, 110, y, 18, WEAPONS[t].light, 'left');
+      drawText(ctx, `${WEAPONS[t].name}: ${WEAPONS[t].description}`, 110, y, 18, WEAPONS[t].light, 'left');
     });
-    drawText(ctx, 'Plusieurs armes identiques = arme plus puissante', cx, 494, 17, '#e2f6ff', 'center', '#120c2a', 'normal');
+    drawText(ctx, 'Several identical weapons = a stronger weapon', cx, 494, 17, '#e2f6ff', 'center', '#120c2a', 'normal');
 
-    drawText(ctx, 'Points par ennemi', cx, 534, 22, '#ffe25a');
+    drawText(ctx, 'Points per enemy', cx, 534, 22, '#ffe25a');
     ENEMY_KINDS.forEach((k, i) => {
       const col = i < 8 ? 0 : 1;
       const row = i % 8;
@@ -245,41 +245,41 @@ export class App {
       drawText(ctx, ENEMY_STATS[k].name, x, y, 17, '#e2f6ff', 'left', '#120c2a', 'normal');
       drawText(ctx, `${ENEMY_POINTS[k]}`, x + PLAY_W / 2 - 70, y, 17, '#ffe25a', 'right');
     });
-    drawText(ctx, 'Entrée ou Échap : retour', cx, 828, 16, '#bfeeff');
+    drawText(ctx, 'Enter or Esc: back', cx, 828, 16, '#bfeeff');
   }
 
   private drawScores(): void {
     const ctx = this.ctx;
     this.dim(0.65);
     const cx = PLAY_W / 2;
-    drawText(ctx, 'Meilleurs scores', cx, 80, 44, '#ffe25a');
-    if (this.scores.length === 0) drawText(ctx, 'Aucun score pour le moment.', cx, 300, 24, '#e2f6ff');
+    drawText(ctx, 'High scores', cx, 80, 44, '#ffe25a');
+    if (this.scores.length === 0) drawText(ctx, 'No scores yet.', cx, 300, 24, '#e2f6ff');
     this.scores.forEach((s, i) => {
       const y = 170 + i * 56;
       const hl = i === this.highlight && Math.floor(this.time * 4) % 2 === 0;
       const color = hl ? '#ffe25a' : '#e2f6ff';
       drawText(ctx, `${i + 1}.`, 110, y, 26, color, 'right');
       drawText(ctx, s.name, 130, y, 26, color, 'left');
-      drawText(ctx, s.level > LEVELS.length ? 'Terminé' : `Niv. ${s.level}`, 440, y, 20, '#9fb4e8', 'center');
+      drawText(ctx, s.level > LEVELS.length ? 'Cleared' : `Lv. ${s.level}`, 440, y, 20, '#9fb4e8', 'center');
       drawDigits(ctx, formatScore(s.score), PLAY_W - 60, y - 12, 5, color, '#120c2a', 'right');
     });
-    drawText(ctx, 'Entrée : retour au menu', cx, 820, 18, '#bfeeff');
+    drawText(ctx, 'Enter: back to menu', cx, 820, 18, '#bfeeff');
   }
 
   private drawPause(): void {
     this.dim(0.6);
     drawText(this.ctx, 'PAUSE', PLAY_W / 2, PLAY_H / 2 - 40, 64, '#ffe25a');
-    drawText(this.ctx, 'Échap / P / Entrée : reprendre', PLAY_W / 2, PLAY_H / 2 + 30, 22, '#e2f6ff');
-    drawText(this.ctx, 'Q : quitter vers le menu', PLAY_W / 2, PLAY_H / 2 + 66, 22, '#e2f6ff');
+    drawText(this.ctx, 'Esc / P / Enter: resume', PLAY_W / 2, PLAY_H / 2 + 30, 22, '#e2f6ff');
+    drawText(this.ctx, 'Q: quit to menu', PLAY_W / 2, PLAY_H / 2 + 66, 22, '#e2f6ff');
   }
 
   private drawGameOver(): void {
     const w = this.world;
     this.dim(Math.min(0.65, this.screenT));
     drawText(this.ctx, 'GAME OVER', PLAY_W / 2, PLAY_H / 2 - 70, 72, '#ff4f7b');
-    drawText(this.ctx, `Score : ${formatScore(w?.score ?? 0)}`, PLAY_W / 2, PLAY_H / 2 + 10, 32, '#ffffff');
-    drawText(this.ctx, `Niveau atteint : ${(w?.levelIndex ?? 0) + 1}`, PLAY_W / 2, PLAY_H / 2 + 52, 22, '#e2f6ff');
-    if (this.screenT > 1) drawText(this.ctx, 'Entrée pour continuer', PLAY_W / 2, PLAY_H / 2 + 120, 22, '#bfeeff');
+    drawText(this.ctx, `Score: ${formatScore(w?.score ?? 0)}`, PLAY_W / 2, PLAY_H / 2 + 10, 32, '#ffffff');
+    drawText(this.ctx, `Level reached: ${(w?.levelIndex ?? 0) + 1}`, PLAY_W / 2, PLAY_H / 2 + 52, 22, '#e2f6ff');
+    if (this.screenT > 1) drawText(this.ctx, 'Press Enter to continue', PLAY_W / 2, PLAY_H / 2 + 120, 22, '#bfeeff');
   }
 
   private drawVictory(): void {
@@ -287,8 +287,8 @@ export class App {
     const w = this.world;
     this.dim(Math.min(0.6, this.screenT));
     const cx = PLAY_W / 2;
-    drawText(ctx, 'VICTOIRE !', cx, 170, 72, '#ffe25a');
-    drawText(ctx, 'Vous avez retrouvé votre chien.', cx, 245, 28, '#e2f6ff');
+    drawText(ctx, 'VICTORY!', cx, 170, 72, '#ffe25a');
+    drawText(ctx, 'You got your dog back.', cx, 245, 28, '#e2f6ff');
     const hop = Math.abs(Math.sin(this.time * 6)) * -16;
     drawSprite(ctx, this.bank.get('player'), cx - 60, 400, 0, 2, 2);
     drawSprite(ctx, this.bank.get('dog'), cx + 60, 410 + hop, 0, 2, 2);
@@ -298,21 +298,21 @@ export class App {
       drawSprite(ctx, this.bank.get('heart'), cx - 80 + i * 40, 330 - t * 120);
       ctx.globalAlpha = 1;
     }
-    drawText(ctx, `Score final : ${formatScore(w?.score ?? 0)}`, cx, 540, 34, '#ffffff');
-    if (this.screenT > 1) drawText(ctx, 'Entrée pour continuer', cx, 620, 22, '#bfeeff');
+    drawText(ctx, `Final score: ${formatScore(w?.score ?? 0)}`, cx, 540, 34, '#ffffff');
+    if (this.screenT > 1) drawText(ctx, 'Press Enter to continue', cx, 620, 22, '#bfeeff');
   }
 
   private drawNameEntry(): void {
     const ctx = this.ctx;
     this.dim(0.75);
     const cx = PLAY_W / 2;
-    drawText(ctx, 'Nouveau record !', cx, 230, 50, '#ffe25a');
-    drawText(ctx, `Score : ${formatScore(this.world?.score ?? 0)}`, cx, 300, 30, '#ffffff');
-    drawText(ctx, 'Entrez votre nom :', cx, 380, 24, '#e2f6ff');
+    drawText(ctx, 'New high score!', cx, 230, 50, '#ffe25a');
+    drawText(ctx, `Score: ${formatScore(this.world?.score ?? 0)}`, cx, 300, 30, '#ffffff');
+    drawText(ctx, 'Enter your name:', cx, 380, 24, '#e2f6ff');
     ctx.fillStyle = 'rgba(191,238,255,0.15)';
     ctx.fillRect(cx - 200, 410, 400, 64);
     const caret = Math.floor(this.time * 3) % 2 === 0 ? '_' : ' ';
     drawText(ctx, this.nameBuffer + caret, cx, 442, 38, '#ffffff');
-    drawText(ctx, `${NAME_MAX} caractères max — Entrée pour valider`, cx, 510, 18, '#bfeeff');
+    drawText(ctx, `${NAME_MAX} characters max — Enter to confirm`, cx, 510, 18, '#bfeeff');
   }
 }
