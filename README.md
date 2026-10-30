@@ -26,8 +26,8 @@ npm test           # unit tests + headless simulation of a full run
 
 - **Health bar: 3 HP**, no lives. At 0 HP, the game is over.
 - Destroy the ships shaped like a **gamepad** (neutral grey) to release a surprise weapon.
-- **5 weapons maximum** (each boss drops a "+1 slot", up to 8). Beyond that, the oldest weapon is sacrificed automatically (and triggers its salvo).
-- Several copies of the same weapon = a more powerful weapon (max level 8, one per slot).
+- **5 weapons maximum** (each boss drops a "+1 slot", up to 20). Beyond that, the oldest weapon is sacrificed automatically (and triggers its salvo).
+- Several copies of the same weapon = a more powerful weapon (max level 20, one per slot).
 
 | Weapon | Effect |
 |---|---|
@@ -38,11 +38,11 @@ npm test           # unit tests + headless simulation of a full run
 | Blue | Missiles (homing from level 2) |
 | Red | Electric beam laser |
 
-4 levels, with a boss at the end of each; the last one holds your dog. Top 10 scores saved in the browser (`localStorage`).
+10 levels, each ending with a boss and each harder than the last (more waves, denser groups, heavier enemies, tougher bosses); the last one, Kidnapper's Lair, holds your dog. Top 10 scores saved in the browser (`localStorage`).
 
 ### Development options (URL)
 
-`?level=3` (starting level), `?boss` (go straight to the boss), `?god` (invincible), `?weapons=red,blue,green`.
+`?level=3` (starting level, 1-10), `?boss` (go straight to the boss), `?god` (invincible), `?weapons=red,blue,green`, `?slots=15` (extra weapon slots).
 Example: `http://localhost:5280/?level=4&boss&god&weapons=red,red,green`.
 In dev mode, the application is accessible from the console via `window.__app`.
 

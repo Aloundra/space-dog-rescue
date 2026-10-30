@@ -47,6 +47,6 @@ export const WEAPONS: Record<WeaponType, WeaponInfo> = {
 };
 
 export const BASE_SLOTS = 5;
-export const MAX_SLOTS = 8;
-/** No evolution cap: the level can reach the slot count (8). */
+export const MAX_SLOTS = 20;
+/** No evolution cap: the level can reach the slot count (20). */
 export const MAX_WEAPON_LEVEL = MAX_SLOTS;

@@ -6,7 +6,7 @@ import type { DebugOptions } from './game/world';
 import { SpriteBank } from './render/sprites';
 import { App } from './ui/app';
 
-/** Dev aids via URL: ?level=3&god&boss&weapons=red,blue */
+/** Dev aids via URL: ?level=3&god&boss&weapons=red,blue&slots=15 */
 function readDebug(): DebugOptions {
   const q = new URLSearchParams(window.location.search);
   const opts: DebugOptions = {};
@@ -16,6 +16,8 @@ function readDebug(): DebugOptions {
   if (q.has('boss')) opts.boss = true;
   const w = q.get('weapons');
   if (w) opts.weapons = w.split(',').filter((t): t is WeaponType => (WEAPON_TYPES as readonly string[]).includes(t));
+  const sl = Number(q.get('slots'));
+  if (Number.isFinite(sl) && sl > 0) opts.slots = sl;
   return opts;
 }
 

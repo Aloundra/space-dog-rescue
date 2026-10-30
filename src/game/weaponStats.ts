@@ -1,4 +1,4 @@
-// Pure weapon tuning functions: level (0..8, no cap other than the slot count) -> firing parameters.
+// Pure weapon tuning functions: level (0..20, no cap other than the slot count) -> firing parameters.
 // Rule: every weapon level adds +25% damage and +25% projectile size (linear, so losing a level removes 25%).
 import { GAME_SCALE } from '../config';
 import { WEAPONS, type WeaponType } from '../data/weapons';

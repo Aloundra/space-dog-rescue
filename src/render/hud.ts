@@ -108,14 +108,18 @@ const WEAPON_GLYPHS: Record<WeaponType, readonly string[]> = {
   red: ['..##.', '.#...', '#####', '...#.', '.##..'],
 };
 
-/** Column of weapon slots at the bottom-left of the play area. */
+/** Slots per column; extra slots (up to MAX_SLOTS) start a second column to the right. */
+const SLOTS_PER_COLUMN = 10;
+
+/** Columns of weapon slots at the bottom-left of the play area. */
 export function drawWeaponSlots(ctx: CanvasRenderingContext2D, inv: WeaponInventory): void {
   const size = 36;
   const gap = 6;
-  const x = 10;
   const bottom = PLAY_H - 12;
   for (let i = 0; i < MAX_SLOTS; i++) {
-    const y = bottom - (i + 1) * (size + gap) + gap;
+    const x = 10 + Math.floor(i / SLOTS_PER_COLUMN) * (size + gap + PX);
+    const row = i % SLOTS_PER_COLUMN;
+    const y = bottom - (row + 1) * (size + gap) + gap;
     if (i >= inv.slots) continue;
     const t = inv.list[i];
     ctx.fillStyle = 'rgba(18,12,42,0.75)';

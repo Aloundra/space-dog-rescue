@@ -43,7 +43,7 @@ describe('World simulation', () => {
     const kinds = new Set<string>();
     let bosses = 0;
     let lastBoss: unknown = null;
-    run(w, input, 60 * 25, (world) => {
+    run(w, input, 60 * 60, (world) => {
       levelsSeen.add(world.levelIndex);
       for (const e of world.enemies) kinds.add(e.kind);
       if (world.boss && world.boss !== lastBoss) {
@@ -57,6 +57,21 @@ describe('World simulation', () => {
     expect(kinds.size).toBe(17); // 16 enemies + carrier
     expect(w.score).toBeGreaterThan(100_000);
   }, 120_000);
+
+  it('a full 20-slot loadout stays stable and fast under heavy fire', () => {
+    const types = ['violet', 'pink', 'green', 'yellow', 'blue', 'red'] as const;
+    const loadout = Array.from({ length: 20 }, (_, i) => types[i % types.length]);
+    const w = new World(5, { god: true, startLevel: 9, slots: 15, weapons: loadout });
+    expect(w.inventory.slots).toBe(20);
+    expect(w.inventory.size).toBe(20);
+    const input = new FakeInput();
+    input.down.add('Space');
+    const t0 = performance.now();
+    run(w, input, 40);
+    const msPerStep = (performance.now() - t0) / (40 / STEP);
+    expect(Number.isFinite(w.player.x) && Number.isFinite(w.score)).toBe(true);
+    expect(msPerStep).toBeLessThan(8);
+  }, 60_000);
 
   it('without moving or shooting the player loses 3 HP and the game ends', () => {
     const w = new World(7);

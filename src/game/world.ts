@@ -30,6 +30,8 @@ export interface DebugOptions {
   startLevel?: number;
   god?: boolean;
   weapons?: WeaponType[];
+  /** Extra weapon slots granted at start (dev aid, capped by MAX_SLOTS). */
+  slots?: number;
   /** Skip the waves and go straight to the boss warning. */
   boss?: boolean;
 }
@@ -104,6 +106,7 @@ export class World {
   constructor(seed = Date.now(), debug: DebugOptions = {}) {
     this.rng = new Rng(seed);
     this.god = debug.god ?? false;
+    for (let i = 0; i < (debug.slots ?? 0); i++) this.inventory.addSlot();
     for (const w of debug.weapons ?? []) this.inventory.add(w);
     this.ctx = {
       px: 0, py: 0, difficulty: 1, rng: this.rng,

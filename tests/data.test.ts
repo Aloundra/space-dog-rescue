@@ -20,6 +20,8 @@ describe('weapon levels', () => {
     expect(sideShots(0, 0)).toBeNull();
     expect(sideShots(3, 0)!.angles.length).toBeGreaterThan(sideShots(2, 0)!.angles.length);
     expect(missileStats(3)!.count).toBe(3);
+    expect(violetBurst(20)!.count).toBeGreaterThan(violetBurst(8)!.count);
+    expect(laserStats(20)!.dps).toBeGreaterThan(laserStats(8)!.dps);
     expect(laserStats(2)!.dps).toBeGreaterThan(laserStats(1)!.dps);
     for (const t of WEAPON_TYPES) expect(salvoDamage(t, 2)).toBeGreaterThan(salvoDamage(t, 1));
   });
@@ -73,11 +75,37 @@ describe('violet balls cross the whole screen', () => {
 });
 
 describe('levels data', () => {
-  it('has at least 4 levels, each with a boss; the last one holds the dog', () => {
-    expect(LEVELS.length).toBeGreaterThanOrEqual(4);
+  it('has 10 levels, each with a boss; the last one (Kidnapper\'s Lair) holds the dog', () => {
+    expect(LEVELS).toHaveLength(10);
+    expect(LEVELS[9].name).toBe("Kidnapper's Lair");
     for (const l of LEVELS) expect(l.boss.hp).toBeGreaterThan(0);
     expect(LEVELS[LEVELS.length - 1].boss.holdsDog).toBe(true);
     expect(LEVELS.slice(0, -1).every((l) => !l.boss.holdsDog)).toBe(true);
+  });
+
+  it('gets harder level after level: difficulty, wave count and boss health only go up', () => {
+    for (let i = 1; i < LEVELS.length; i++) {
+      expect(LEVELS[i].difficulty, `difficulty ${i + 1}`).toBeGreaterThan(LEVELS[i - 1].difficulty);
+      expect(LEVELS[i].boss.hp, `boss hp ${i + 1}`).toBeGreaterThan(LEVELS[i - 1].boss.hp);
+      expect(LEVELS[i].boss.points, `boss points ${i + 1}`).toBeGreaterThan(LEVELS[i - 1].boss.points);
+    }
+    // Generated levels (4..10) add waves at every step.
+    for (let i = 4; i < LEVELS.length; i++) {
+      expect(LEVELS[i].waves.length, `waves ${i + 1}`).toBeGreaterThan(LEVELS[i - 1].waves.length);
+    }
+  });
+
+  it('generates levels deterministically, with waves inside a playable timeline', () => {
+    for (const l of LEVELS) {
+      const times = l.waves.map((w) => w.at);
+      expect(Math.min(...times)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...times)).toBeLessThan(150);
+      for (const w of l.waves) {
+        expect(w.count).toBeGreaterThan(0);
+        expect(w.x).toBeGreaterThanOrEqual(0);
+        expect(w.x).toBeLessThanOrEqual(1);
+      }
+    }
   });
 
   it('uses all 16 enemy kinds and weapon carriers', () => {
