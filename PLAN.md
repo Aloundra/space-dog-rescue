@@ -27,7 +27,7 @@
 - **Weapon levels**: level = number of copies of a type, no cap (up to the 8 slots). Past level 4, fire-rate gains are clamped (green interval >= 0.07 s, blue >= 0.35 s); damage/size keep growing. Each level = +25% damage and +25%
   projectile size (linear: level n = x(1 + 0.25(n-1)); green: x(1 + 0.25n) over the bare gun). Losing a level removes 25%.
 - **Violet**: balls live until they leave the screen. **Yellow**: one shot per side per level (narrow fan);
-  no arrow = horizontal, Up held = shots tilted down (+45 deg), Down held = shots tilted up (-45 deg). **Blue**: missiles lock the nearest enemy at launch,
+  no arrow = horizontal, Up held = shots tilted down 60 deg from horizontal, Down held = shots tilted up 60 deg. **Blue**: missiles lock the nearest enemy at launch,
   retarget the nearest one when it dies. **Red**: one beam per level; each locks the nearest enemy not locked by another beam (shares one if none left) until it dies or
   fire is released; with nothing to lock it goes straight up.
 - **Entity scale** (`GAME_SCALE` = 1.5): ship, enemies, bosses, bullets, pickups, particles, score popups and hitboxes

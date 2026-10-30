@@ -74,14 +74,15 @@ export interface SideShots {
 
 /**
  * Yellow: shots on both sides, aimed with the vertical arrows.
- * `vertical`: -1 = up held (shots at +45 deg, downward), 0 = none (horizontal), 1 = down held (shots at -45 deg, upward).
+ * `vertical`: -1 = up held (shots 60 deg below horizontal), 0 = none (horizontal), 1 = down held (shots 60 deg above horizontal).
  * Angles in radians, 0 = right, PI/2 = down. Each level adds one shot per side in a narrow fan.
  */
 export function sideShots(yellow: number, vertical: number): SideShots | null {
   if (yellow <= 0) return null;
   // Inverted mapping: holding Up tilts the side shots downward, holding Down tilts them upward.
   const v = -Math.sign(vertical);
-  const right = (v * Math.PI) / 4;
+  // 60 deg tilt from the horizontal axis.
+  const right = (v * Math.PI) / 3;
   const left = Math.PI - right;
   const fan = 0.14;
   const angles: number[] = [];

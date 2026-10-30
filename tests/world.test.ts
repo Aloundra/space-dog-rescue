@@ -143,7 +143,7 @@ describe('World simulation', () => {
     expect(e.hp).toBeLessThan(5000);
   });
 
-  it('yellow side shots go upward at 45 deg while ArrowDown is held (inverted mapping)', () => {
+  it('yellow side shots go upward at 60 deg from horizontal while ArrowDown is held (inverted mapping)', () => {
     const w = new World(5, { weapons: ['yellow'], god: true });
     const input = new FakeInput();
     w.phase = 'waves';
@@ -154,7 +154,7 @@ describe('World simulation', () => {
     expect(side).toHaveLength(2);
     for (const b of side) {
       expect(b.vy).toBeLessThan(0);
-      expect(Math.abs(b.vy)).toBeCloseTo(Math.abs(b.vx));
+      expect(Math.abs(b.vy) / Math.abs(b.vx)).toBeCloseTo(Math.tan(Math.PI / 3));
     }
   });
 
