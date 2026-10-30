@@ -5,7 +5,8 @@ import { LEVELS } from '../src/data/levels';
 import { WEAPON_TYPES } from '../src/data/weapons';
 import { expandWaves } from '../src/game/spawner';
 import {
-  baseShot, laserStats, levelMultiplier, missileStats, salvoDamage, sideShots, speedMultiplier, violetBurst,
+  baseShot, bonusCount, laserStats, levelMultiplier, missileStats, orbitalStats, pinkStats, salvoDamage, sideShots,
+  sizeMultiplier, speedMultiplier, violetBurst,
 } from '../src/game/weaponStats';
 import { bossHalfRows, sawBlade, sphere, spiralDisc, tankRows, turretRows } from '../src/render/procedural';
 import { BASE_PALETTE, SPRITES, expandRows } from '../src/render/spriteData';
@@ -18,23 +19,115 @@ describe('weapon levels', () => {
     expect(violetBurst(0)).toBeNull();
     expect(violetBurst(2)!.count).toBeGreaterThan(violetBurst(1)!.count);
     expect(sideShots(0, 0)).toBeNull();
-    expect(sideShots(3, 0)!.angles.length).toBeGreaterThan(sideShots(2, 0)!.angles.length);
-    expect(missileStats(3)!.count).toBe(3);
-    expect(violetBurst(20)!.count).toBeGreaterThan(violetBurst(8)!.count);
-    expect(laserStats(20)!.dps).toBeGreaterThan(laserStats(8)!.dps);
+    expect(sideShots(2, 0)!.angles.length).toBeGreaterThan(sideShots(1, 0)!.angles.length);
+    expect(missileStats(2)!.count).toBeGreaterThan(missileStats(1)!.count);
+    expect(laserStats(2)!.beams).toBeGreaterThan(laserStats(1)!.beams);
     expect(laserStats(2)!.dps).toBeGreaterThan(laserStats(1)!.dps);
     for (const t of WEAPON_TYPES) expect(salvoDamage(t, 2)).toBeGreaterThan(salvoDamage(t, 1));
   });
 });
 
-describe('weapon level growth (+25% damage and size per level, -25% when a level is lost)', () => {
-  it('multiplier is linear', () => {
+describe('weapon level rules: abilities over levels 1-5, damage and count after', () => {
+  it('damage grows +25% per level up to 5, then +10% per level (of the level-5 value)', () => {
     expect(levelMultiplier(1)).toBe(1);
     expect(levelMultiplier(2)).toBe(1.25);
     expect(levelMultiplier(3)).toBe(1.5);
-    expect(levelMultiplier(4)).toBe(1.75);
+    expect(levelMultiplier(5)).toBe(2);
+    expect(levelMultiplier(6)).toBeCloseTo(2.2);
+    expect(levelMultiplier(10)).toBeCloseTo(3);
+    expect(levelMultiplier(20)).toBeCloseTo(5);
   });
 
+  it('size stops growing at level 5', () => {
+    expect(sizeMultiplier(1)).toBe(1);
+    expect(sizeMultiplier(5)).toBe(2);
+    expect(sizeMultiplier(6)).toBe(2);
+    expect(sizeMultiplier(20)).toBe(2);
+    for (const l of [5, 12, 20]) {
+      expect(violetBurst(l)!.radius).toBeCloseTo(violetBurst(5)!.radius);
+      expect(missileStats(l)!.radius).toBeCloseTo(missileStats(5)!.radius);
+      expect(sideShots(l, 0)!.radius).toBeCloseTo(sideShots(5, 0)!.radius);
+      expect(laserStats(l)!.width).toBeCloseTo(laserStats(5)!.width);
+    }
+  });
+
+  it('extra projectiles start at level 6 and are capped', () => {
+    expect(bonusCount(5, 2)).toBe(0);
+    expect(bonusCount(6, 2)).toBe(1);
+    expect(bonusCount(7, 2)).toBe(1);
+    expect(bonusCount(8, 2)).toBe(2);
+    for (const l of [1, 3, 5]) {
+      expect(baseShot(l).count).toBeLessThanOrEqual(3);
+      expect(sideShots(l, 0)!.angles.length).toBeLessThanOrEqual(4);
+      expect(missileStats(l)!.count).toBeLessThanOrEqual(2);
+      expect(laserStats(l)!.beams).toBeLessThanOrEqual(2);
+    }
+    expect(baseShot(6).count).toBe(4);
+    expect(baseShot(20).count).toBe(8);
+    expect(sideShots(6, 0)!.angles.length / 2).toBe(3);
+    expect(sideShots(20, 0)!.angles.length / 2).toBe(8);
+    expect(missileStats(6)!.count).toBe(3);
+    expect(missileStats(20)!.count).toBe(10);
+    expect(laserStats(6)!.beams).toBe(3);
+    expect(laserStats(20)!.beams).toBe(8);
+    expect(violetBurst(6)!.count).toBe(violetBurst(5)!.count + 2);
+  });
+
+  it('levels 1-5 unlock one ability each, in order', () => {
+    // Green: 1 two shots, 2 three, 3 pierce, 4 ricochet off the side walls, 5 charged exploding shot.
+    expect([1, 2, 3, 4, 5].map((l) => baseShot(l).count)).toEqual([2, 3, 3, 3, 3]);
+    expect([2, 3, 4].map((l) => [baseShot(l).pierce, baseShot(l).ricochet])).toEqual([[0, 0], [1, 0], [1, 1]]);
+    expect(baseShot(4).charge).toBeNull();
+    expect(baseShot(5).charge!.blast).toBeGreaterThan(0);
+    // Violet: 2 rebound, 3 trail, 4 split, 5 orbitals.
+    expect([1, 2, 3, 4].map((l) => [violetBurst(l)!.rebound, violetBurst(l)!.trail, violetBurst(l)!.split])).toEqual([
+      [0, false, false], [1, false, false], [1, true, false], [1, true, true],
+    ]);
+    expect(orbitalStats(4)).toBeNull();
+    expect(orbitalStats(5)!.count).toBe(4);
+    // Pink: 2 trail, 3 magnet, 4 graze, 5 bullet time; speed capped at x2.
+    const pk = [1, 2, 3, 4, 5].map((l) => pinkStats(l)!);
+    expect(pk.map((x) => x.trailDps > 0)).toEqual([false, true, true, true, true]);
+    expect(pk.map((x) => x.magnet > 0)).toEqual([false, false, true, true, true]);
+    expect(pk.map((x) => x.graze !== null)).toEqual([false, false, false, true, true]);
+    expect(pk.map((x) => x.slow !== null)).toEqual([false, false, false, false, true]);
+    expect(speedMultiplier(5)).toBe(2);
+    expect(speedMultiplier(20)).toBe(2);
+    // Yellow: 2 wider fan (two per side), 3 pierce, 4 rear shot, 5 boomerang.
+    expect([1, 2, 3, 4, 5].map((l) => sideShots(l, 0)!.angles.length / 2)).toEqual([1, 2, 2, 2, 2]);
+    expect([3, 4, 5].map((l) => [sideShots(l, 0)!.pierce, sideShots(l, 0)!.rear, sideShots(l, 0)!.boomerang > 0])).toEqual([
+      [1, false, false], [1, true, false], [1, true, true],
+    ]);
+    // Blue: 2 two missiles, 3 blast, 4 split, 5 heavy missile.
+    expect([1, 2].map((l) => missileStats(l)!.count)).toEqual([1, 2]);
+    expect([2, 3, 4, 5].map((l) => [missileStats(l)!.blast > 0, missileStats(l)!.split, missileStats(l)!.heavy !== null])).toEqual([
+      [false, false, false], [true, false, false], [true, true, false], [true, true, true],
+    ]);
+    // Red: 2 two beams, 3 chain, 4 shield, 5 main beam.
+    expect([1, 2].map((l) => laserStats(l)!.beams)).toEqual([1, 2]);
+    expect([2, 3, 4, 5].map((l) => [laserStats(l)!.chain !== null, laserStats(l)!.shield, laserStats(l)!.main !== null])).toEqual([
+      [false, false, false], [true, false, false], [true, true, false], [true, true, true],
+    ]);
+  });
+
+  it('salvo power: +50% per level to 5, then +15%', () => {
+    const base = salvoDamage('red', 1);
+    expect(salvoDamage('red', 5)).toBeCloseTo(base * 3);
+    expect(salvoDamage('red', 6)).toBeCloseTo(base * 3 * 1.15);
+    expect(salvoDamage('red', 20)).toBeLessThan(base * 10);
+  });
+
+  it('level 20 keeps projectile counts bounded (pool-safe)', () => {
+    const perSecond =
+      (baseShot(20).count / baseShot(20).interval) * 2 +
+      (sideShots(20, 0)!.angles.length / baseShot(20).interval) * 3.5 +
+      (violetBurst(20)!.count / violetBurst(20)!.interval) * 3 +
+      (missileStats(20)!.count / missileStats(20)!.interval) * 4;
+    expect(perSecond).toBeLessThan(2500);
+  });
+});
+
+describe('weapon level growth (+25% damage and size per level, -25% when a level is lost)', () => {
   it('applies to damage and projectile size of every projectile weapon', () => {
     const pairs = [
       [violetBurst(1)!, violetBurst(2)!],

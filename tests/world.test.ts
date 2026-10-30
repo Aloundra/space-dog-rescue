@@ -173,8 +173,8 @@ describe('World simulation', () => {
     }
   });
 
-  it('red: each level adds a beam, each beam locks a different enemy', () => {
-    const w = new World(5, { weapons: ['red', 'red', 'red'], god: true });
+  it('red: level 2 has two beams, each beam locks a different enemy', () => {
+    const w = new World(5, { weapons: ['red', 'red'], god: true });
     const input = new FakeInput();
     w.phase = 'waves';
     w.enemies = [];
@@ -183,9 +183,9 @@ describe('World simulation', () => {
     a.hp = b.hp = 5000;
     input.down.add('Space');
     w.update(STEP, input);
-    expect(w.laser.beams).toHaveLength(3);
+    expect(w.laser.beams).toHaveLength(2);
     const targets = w.laser.beams.map((bm) => bm.target);
-    expect(new Set(targets.slice(0, 2)).size + new Set(targets).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(targets).size).toBe(2);
     expect(targets).toContain(a);
     expect(targets).toContain(b);
     // Sacrificing one red weapon removes one beam.
@@ -193,7 +193,7 @@ describe('World simulation', () => {
     w.update(STEP, input);
     input.pressed.clear();
     w.update(STEP, input);
-    expect(w.laser.beams).toHaveLength(2);
+    expect(w.laser.beams).toHaveLength(1);
   });
 
   it('violet balls leave from the nose inside a 90 deg cone in front of the ship', () => {

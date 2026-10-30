@@ -3,7 +3,7 @@ import type { BossDef } from '../data/levels';
 import type { WeaponType } from '../data/weapons';
 
 export type BulletStyle =
-  | 'shot' | 'violet' | 'side' | 'missile'
+  | 'shot' | 'charge' | 'violet' | 'side' | 'missile' | 'heavyMissile'
   | 'ePellet' | 'eSquare' | 'eBead' | 'eOrb' | 'eMissile' | 'eDisc';
 
 export interface Bullet {
@@ -24,6 +24,28 @@ export interface Bullet {
   scale: number;
   /** Locked target for homing player missiles. */
   target: Target | null;
+  /** Visual tier (weapon level 1..5), 0 = plain. */
+  tier: number;
+  /** Extra enemies this projectile can pass through before it stops. */
+  pierce: number;
+  /** Bounces left off the screen edges (green shots). */
+  edgeBounce: number;
+  /** Bounces left off enemies (violet balls). */
+  rebound: number;
+  /** Explosion radius on impact (0 = none) and its damage. */
+  blast: number;
+  blastDmg: number;
+  /** Violet: splits into two small balls on impact. */
+  splitOnHit: boolean;
+  /** Blue: splits into two missiles at this age in seconds (0 = never). */
+  splitAt: number;
+  /** Yellow boomerang: age in seconds at which the shot turns back toward the ship (0 = never). */
+  turnAt: number;
+  returning: boolean;
+  /** Violet luminous trail (visual). */
+  trail: boolean;
+  /** Targets already hit (so a piercing shot never hits the same one twice). */
+  hit: Target[];
 }
 
 /** Anything a player weapon can lock on (enemy or boss). */
@@ -35,7 +57,8 @@ export interface Target {
 
 export const makeBullet = (): Bullet => ({
   active: false, x: 0, y: 0, vx: 0, vy: 0, r: 4, dmg: 1, style: 'shot', t: 0, life: 3, homing: 0, bounce: false,
-  scale: 1, target: null,
+  scale: 1, target: null, tier: 0, pierce: 0, edgeBounce: 0, rebound: 0, blast: 0, blastDmg: 0,
+  splitOnHit: false, splitAt: 0, turnAt: 0, returning: false, trail: false, hit: [],
 });
 
 export type EnemyId = EnemyKind | 'carrier';

@@ -24,12 +24,19 @@
   (a sacrifice is always a salvo in this game).
 - **Salvo**: clears every enemy bullet, damages every on-screen enemy (bosses take 1/3), short invulnerability.
   Damage depends on the sacrificed weapon type and its level before removal.
-- **Weapon levels**: level = number of copies of a type, no cap (up to the 20 slots). Past level 4, fire-rate gains are clamped (green interval >= 0.07 s, blue >= 0.35 s); damage/size keep growing. Each level = +25% damage and +25%
-  projectile size (linear: level n = x(1 + 0.25(n-1)); green: x(1 + 0.25n) over the bare gun). Losing a level removes 25%.
-- **Violet**: balls fired from the nose, random direction inside a 90 deg cone ahead; they live until they leave the screen. **Yellow**: one shot per side per level (narrow fan);
-  no arrow = horizontal, Up held = shots tilted down 60 deg from horizontal, Down held = shots tilted up 60 deg. **Blue**: missiles lock the nearest enemy at launch,
-  retarget the nearest one when it dies. **Red**: one beam per level; each locks the nearest enemy not locked by another beam (shares one if none are left) until it dies or
-  fire is released; with nothing to lock, it goes straight up.
+- **Weapon levels**: level = number of copies of a type (up to the 20 slots). Levels 1-5 each unlock one ability and a new look; damage and projectile size grow +25% per level
+  (level n = x(1 + 0.25(n-1)); green: x(1 + 0.25n) over the bare gun) and size stops at level 5. Level 6+: no new ability, damage +10% per level of the level-5 value, plus an extra
+  projectile every few levels (green +1 per 3, yellow/blue/red +1 per 2, violet +2 balls per level), capped (8 / 8 per side / 10 / 8 beams). Fire-rate gains stop after level 5
+  (green interval >= 0.07 s, blue >= 0.35 s). Losing a level removes one step. All of it lives in `src/game/weaponStats.ts` (pure functions, unit-tested).
+- **Abilities** (level -> new thing): Green 1 two shots, 2 three shots, 3 pierce 1, 4 ricochet once off the side walls (not the top edge), 5 heavy exploding shot every 0.9 s.
+  Violet 1 balls in a 90 deg cone (they live until they leave the screen), 2 rebound off the first enemy, 3 luminous trail, 4 split in two on impact (after the rebound), 5 four orbs
+  circling the ship (absorb small enemy bullets, 1.5 s recharge; hurt enemies they touch). Pink 1 speed x1.2 (x2 at level 5, never more), 2 damaging trail, 3 pickups pulled in,
+  4 graze shield (0.6 s invulnerability on a near miss, 8 s recharge), 5 bullet time (enemy bullets near the ship at half speed). Yellow 1 one shot per side, 2 two per side with a wider
+  fan, 3 pierce 1, 4 shot straight backward, 5 boomerang (turns back after 0.5 s and hits again). Up held = shots tilted down 60 deg from horizontal, Down held = tilted up 60 deg.
+  Blue 1 one missile (locks the nearest enemy at launch, retargets when it dies), 2 two missiles, 3 area explosion, 4 splits in two after 0.45 s, 5 heavy missile (pierces everything).
+  Red 1 one beam, 2 two beams (each locks a different enemy, shares one if none are left, goes straight up with nothing to lock), 3 chain lightning (60% damage to the nearest other
+  enemy within 255 px), 4 beams destroy small enemy bullets, 5 beam 0 becomes a main beam (1.8x wide, 2.5x damage) that prefers the boss, then the sturdiest enemy.
+- **Salvo scaling**: +50% per level up to 5, then +15% per level.
 - **Entity scale** (`GAME_SCALE` = 1.5): ship, enemies, bosses, bullets, pickups, particles, score popups and hitboxes
   are 1.5x (sprites at 6 px per art pixel). HUD, menus and overlays are unchanged.
 - **Carrier ("gamepad")**: points not given by the brief → 200 points. Neutral steel-grey for every weapon: the dropped weapon cannot be guessed.
@@ -47,6 +54,7 @@
 
 ## Status
 All 8 milestones implemented. Commits were made per area at the end rather than strictly one per milestone.
+Later updates (weapon tiers, 10 levels, 20 slots, HUD symbols) are listed in CHANGELOG.md.
 
 ## Open questions
 None blocking.

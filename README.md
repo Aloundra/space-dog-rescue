@@ -28,15 +28,18 @@ npm test           # unit tests + headless simulation of a full run
 - Destroy the ships shaped like a **gamepad** (neutral grey) to release a surprise weapon.
 - **5 weapons maximum** (each boss drops a "+1 slot", up to 20). Beyond that, the oldest weapon is sacrificed automatically (and triggers its salvo).
 - Several copies of the same weapon = a more powerful weapon (max level 20, one per slot).
+- **Levels 1-5**: each level adds a visible change and one new ability (damage and size +25% per level). **Level 6+**: no new ability, no more size; damage +10% per level and, for some weapons, an extra projectile every few levels.
 
-| Weapon | Effect |
-|---|---|
-| Violet | Small violet balls in all directions (more of them, and farther, with each level) |
-| Pink | Speeds up the ship |
-| Green | Improves the base weapon (fire rate, number of shots, damage) |
-| Yellow | Fires on both sides at once (then diagonals, then rear) |
-| Blue | Missiles (homing from level 2) |
-| Red | Electric beam laser |
+| Weapon | Lv 1 | Lv 2 | Lv 3 | Lv 4 | Lv 5 | Lv 6+ |
+|---|---|---|---|---|---|---|
+| Green (base gun) | 2 shots | 3 shots | Pierces 1 enemy | Ricochets once off the side walls | Heavy exploding shot | +1 shot every 3 levels (max 8) |
+| Violet (balls) | Balls in a cone | Rebound off an enemy | Luminous trail | Splits in two on impact | 4 orbiting orbs absorb small bullets | +2 balls per burst |
+| Pink (speed) | Speed x1.2 | Damaging trail | Pulls pickups in | Graze shield (near miss = brief invulnerability) | Bullet time around the ship, speed x2 | Stronger trail, faster graze recharge |
+| Yellow (sides) | 1 shot per side | 2 per side, wider fan | Pierces 1 enemy | Rear shot | Boomerang return | +1 shot per side every 2 levels (max 8) |
+| Blue (missiles) | 1 homing missile | 2 missiles | Explosion on impact | Splits in two in flight | Heavy missile through everything | +1 missile every 2 levels (max 10) |
+| Red (laser) | 1 beam | 2 beams | Chain lightning | Beams cut small enemy bullets | Massive main beam on the boss / sturdiest enemy | +1 beam every 2 levels (max 8) |
+
+The sacrifice salvo grows +50% per level up to 5, then +15%.
 
 10 levels, each ending with a boss and each harder than the last (more waves, denser groups, heavier enemies, tougher bosses); the last one, Kidnapper's Lair, holds your dog. Top 10 scores saved in the browser (`localStorage`).
 
@@ -59,7 +62,7 @@ src/
 tests/               Vitest (pure logic + full-run simulations)
 ```
 
-Design choices not specified by the brief are listed in [PLAN.md](PLAN.md).
+Design choices not specified by the brief are listed in [PLAN.md](PLAN.md); updates are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Local deployment (LAN)
 

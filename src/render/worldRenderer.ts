@@ -2,6 +2,7 @@
 import { ENTITY_PX, GAME_SCALE as S, PLAY_H, PLAY_W, PLAY_X, PLAY_Y } from '../config';
 import { LEVELS } from '../data/levels';
 import { formatScore } from '../game/score';
+import { laserStats, orbitalStats, pinkStats, TIER_LEVELS } from '../game/weaponStats';
 import type { Bullet, Enemy } from '../game/types';
 import type { World } from '../game/world';
 import { Background } from './background';
@@ -49,7 +50,9 @@ export class WorldRenderer {
     this.drawBoss(ctx, w);
     for (const b of w.pShots.items) if (b.active) this.drawPlayerBullet(ctx, b);
     if (w.laser.active && !w.player.dead) this.drawLaser(ctx, w);
+    this.drawPinkEffects(ctx, w);
     this.drawPlayer(ctx, w);
+    this.drawOrbitals(ctx, w);
     if (w.phase === 'rescue') this.drawDog(ctx, w.dog.x, w.dog.y, w.time, false);
     for (const b of w.eShots.items) if (b.active) this.drawEnemyBullet(ctx, b, w.time);
     this.drawParticles(ctx, w);
@@ -176,10 +179,62 @@ export class WorldRenderer {
     }
     if (inv.level('pink') > 0) {
       ctx.fillStyle = 'rgba(255,111,181,0.35)';
-      for (let i = 1; i <= inv.level('pink'); i++) ctx.fillRect(-12, 30 + i * 8, 24, 4);
+      for (let i = 1; i <= Math.min(TIER_LEVELS, inv.level('pink')); i++) ctx.fillRect(-12, 30 + i * 8, 24, 4);
     }
     ctx.restore();
     drawSprite(ctx, this.bank.get('player'), p.x, p.y);
+  }
+
+  /** Pink abilities: damaging trail (2+), graze-ready ring (4+), bullet-time field (5+). */
+  private drawPinkEffects(ctx: CanvasRenderingContext2D, w: World): void {
+    const p = w.player;
+    if (p.dead) return;
+    const pink = pinkStats(w.inventory.level('pink'));
+    if (!pink) return;
+    for (const pt of w.trail) {
+      const k = 1 - pt.t / 0.45;
+      const size = Math.round(18 * S * (0.4 + 0.6 * k));
+      ctx.fillStyle = `rgba(255,111,181,${0.75 * k})`;
+      ctx.fillRect(Math.round(pt.x - size / 2), Math.round(pt.y - size / 2), size, size);
+      ctx.fillStyle = `rgba(255,214,236,${0.8 * k})`;
+      ctx.fillRect(Math.round(pt.x - size / 4), Math.round(pt.y - size / 4), Math.round(size / 2), Math.round(size / 2));
+    }
+    if (pink.slow) {
+      ctx.strokeStyle = `rgba(255,111,181,${0.4 + 0.12 * Math.sin(w.time * 4)})`;
+      ctx.lineWidth = 3 * S;
+      ctx.setLineDash([10 * S, 8 * S]);
+      ctx.lineDashOffset = -w.time * 20;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pink.slow.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (pink.graze && p.grazeCd <= 0) {
+      ctx.strokeStyle = `rgba(255,198,226,${0.35 + 0.2 * Math.sin(w.time * 10)})`;
+      ctx.lineWidth = 2 * S;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 26 * S, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  /** Violet level 5+: orbiting orbs (dark while recharging). */
+  private drawOrbitals(ctx: CanvasRenderingContext2D, w: World): void {
+    const orb = orbitalStats(w.inventory.level('violet'));
+    if (!orb) return;
+    for (const o of w.orbitals()) {
+      const r = orb.radius;
+      ctx.globalAlpha = o.ready ? 1 : 0.4;
+      ctx.fillStyle = 'rgba(226,194,255,0.45)';
+      ctx.fillRect(Math.round(o.x - r * 1.4), Math.round(o.y - r * 1.4), Math.round(r * 2.8), Math.round(r * 2.8));
+      ctx.fillStyle = '#5d2a9e';
+      ctx.fillRect(Math.round(o.x - r), Math.round(o.y - r), Math.round(r * 2), Math.round(r * 2));
+      ctx.fillStyle = '#b066ff';
+      ctx.fillRect(Math.round(o.x - r + 3), Math.round(o.y - r + 3), Math.round(r * 2 - 6), Math.round(r * 2 - 6));
+      ctx.fillStyle = '#e2c2ff';
+      ctx.fillRect(Math.round(o.x - r / 2), Math.round(o.y - r / 2), Math.round(r), Math.round(r));
+      ctx.globalAlpha = 1;
+    }
   }
 
   private drawPlayerBullet(ctx: CanvasRenderingContext2D, b: Bullet): void {
@@ -195,40 +250,157 @@ export class WorldRenderer {
     const x = 0;
     const y = 0;
     switch (b.style) {
-      case 'shot':
-        ctx.fillStyle = '#c8ff4a';
+      case 'shot': {
+        // Green: plain lime bolt (tier 0-1), green glow (2), long trail (3 = pierce), flares (4 = ricochet), halo (5).
+        const t = b.tier;
+        if (t >= 5) {
+          ctx.fillStyle = 'rgba(196,255,201,0.28)';
+          ctx.fillRect(x - 8, y - 12, 16, 26);
+        }
+        if (t >= 3) {
+          ctx.fillStyle = 'rgba(91,227,106,0.4)';
+          ctx.fillRect(x - 2, y + 8, 4, 12);
+          ctx.fillRect(x - 1, y + 20, 2, 8);
+        }
+        if (t >= 2) {
+          ctx.fillStyle = '#23813a';
+          ctx.fillRect(x - 5, y - 8, 10, 18);
+        }
+        ctx.fillStyle = t >= 2 ? '#5be36a' : '#c8ff4a';
         ctx.fillRect(x - 3, y - 6, 6, 14);
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(x - 2, y - 8, 4, 6);
+        if (t >= 4) {
+          ctx.fillStyle = '#c4ffc9';
+          ctx.fillRect(x - 8, y - 2, 4, 4);
+          ctx.fillRect(x + 4, y - 2, 4, 4);
+        }
         break;
-      case 'side':
-        ctx.fillStyle = '#a67c0b';
-        ctx.fillRect(x - 5, y - 5, 10, 10);
-        ctx.fillStyle = '#ffd93b';
-        ctx.fillRect(x - 4, y - 4, 8, 8);
-        ctx.fillStyle = '#fff4b8';
-        ctx.fillRect(x - 2, y - 2, 4, 4);
+      }
+      case 'charge': {
+        // Heavy exploding shot (green level 5): pulsing orb with a spiky core.
+        const pulse = Math.floor(b.t * 20) % 2;
+        ctx.fillStyle = 'rgba(196,255,201,0.3)';
+        ctx.fillRect(x - 12 - pulse, y - 12 - pulse, 24 + pulse * 2, 24 + pulse * 2);
+        ctx.fillStyle = '#23813a';
+        ctx.fillRect(x - 8, y - 10, 16, 20);
+        ctx.fillRect(x - 10, y - 8, 20, 16);
+        ctx.fillStyle = '#5be36a';
+        ctx.fillRect(x - 6, y - 8, 12, 16);
+        ctx.fillRect(x - 8, y - 6, 16, 12);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - 3, y - 4, 6, 8);
         break;
-      case 'violet':
-        ctx.fillStyle = '#5d2a9e';
+      }
+      case 'side': {
+        // Yellow: block (tier 0-1), white rim (2), arrowhead along the flight direction (3 = pierce),
+        // sparkle (4 = rear shot), spinning blade (5 = boomerang).
+        const t = b.tier;
+        ctx.save();
+        if (t >= 5) ctx.rotate(b.t * 18);
+        else if (t >= 3) ctx.rotate(Math.atan2(b.vy, b.vx));
+        if (t >= 5) {
+          ctx.fillStyle = '#a67c0b';
+          ctx.fillRect(x - 9, y - 3, 18, 6);
+          ctx.fillRect(x - 3, y - 9, 6, 18);
+          ctx.fillStyle = '#ffd93b';
+          ctx.fillRect(x - 8, y - 2, 16, 4);
+          ctx.fillRect(x - 2, y - 8, 4, 16);
+          ctx.fillStyle = '#fff4b8';
+          ctx.fillRect(x - 3, y - 3, 6, 6);
+        } else if (t >= 3) {
+          ctx.fillStyle = '#a67c0b';
+          ctx.fillRect(x - 9, y - 4, 16, 8);
+          ctx.fillRect(x + 6, y - 6, 4, 12);
+          ctx.fillStyle = '#ffd93b';
+          ctx.fillRect(x - 8, y - 3, 14, 6);
+          ctx.fillRect(x + 6, y - 4, 3, 8);
+          ctx.fillStyle = '#fff4b8';
+          ctx.fillRect(x - 2, y - 2, 8, 4);
+          if (t >= 4) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x - 12, y - 1, 3, 2);
+            ctx.fillRect(x - 14, y - 3, 2, 6);
+          }
+        } else {
+          ctx.fillStyle = t >= 2 ? '#fff4b8' : '#a67c0b';
+          ctx.fillRect(x - 5, y - 5, 10, 10);
+          ctx.fillStyle = '#ffd93b';
+          ctx.fillRect(x - 4, y - 4, 8, 8);
+          ctx.fillStyle = '#fff4b8';
+          ctx.fillRect(x - 2, y - 2, 4, 4);
+        }
+        ctx.restore();
+        break;
+      }
+      case 'violet': {
+        // Violet: ball (tier 0-1), light rim (2 = rebound), trail (3), pink core (4 = split), halo (5).
+        const t = b.tier;
+        if (t >= 3) {
+          const sp = Math.hypot(b.vx, b.vy) || 1;
+          const ux = b.vx / sp;
+          const uy = b.vy / sp;
+          for (let k = 1; k <= 3; k++) {
+            ctx.fillStyle = `rgba(176,102,255,${0.5 - k * 0.12})`;
+            const sz = 8 - k * 1.5;
+            ctx.fillRect(x - ux * k * 7 - sz / 2, y - uy * k * 7 - sz / 2, sz, sz);
+          }
+        }
+        if (t >= 5) {
+          ctx.fillStyle = 'rgba(226,194,255,0.25)';
+          ctx.fillRect(x - 9, y - 9, 18, 18);
+        }
+        ctx.fillStyle = t >= 2 ? '#e2c2ff' : '#5d2a9e';
         ctx.fillRect(x - 5, y - 5, 10, 10);
         ctx.fillStyle = '#b066ff';
         ctx.fillRect(x - 4, y - 4, 8, 8);
-        ctx.fillStyle = '#e2c2ff';
+        ctx.fillStyle = t >= 4 ? '#ff9ad5' : '#e2c2ff';
         ctx.fillRect(x - 3, y - 3, 4, 4);
         break;
+      }
       case 'missile': {
+        // Blue: slim missile (tier 0-1), orange warhead (3 = blast), side pods (4 = split).
+        const t = b.tier;
         ctx.save();
         ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
+        if (t >= 4) {
+          ctx.fillStyle = '#1c3f99';
+          ctx.fillRect(-8, -2, 4, 10);
+          ctx.fillRect(4, -2, 4, 10);
+          ctx.fillStyle = '#bcd8ff';
+          ctx.fillRect(-8, -2, 4, 3);
+          ctx.fillRect(4, -2, 4, 3);
+        }
         ctx.fillStyle = '#120c2a';
         ctx.fillRect(-4, -10, 8, 20);
         ctx.fillStyle = '#3f8cff';
         ctx.fillRect(-3, -8, 6, 16);
-        ctx.fillStyle = '#bcd8ff';
+        ctx.fillStyle = t >= 3 ? '#ff9a2e' : '#bcd8ff';
         ctx.fillRect(-3, -10, 6, 4);
         ctx.fillStyle = '#ff9a2e';
         ctx.fillRect(-2, 8, 4, 4);
         ctx.restore();
+        break;
+      }
+      case 'heavyMissile': {
+        // Blue level 5: big steel missile with a red band and a long flame.
+        ctx.fillStyle = 'rgba(255,154,46,0.5)';
+        ctx.fillRect(x - 4, y + 14, 8, 16 + (Math.floor(b.t * 30) % 2) * 6);
+        ctx.fillStyle = '#ffe25a';
+        ctx.fillRect(x - 2, y + 14, 4, 10);
+        ctx.fillStyle = '#120c2a';
+        ctx.fillRect(x - 7, y - 16, 14, 32);
+        ctx.fillStyle = '#c9cfe0';
+        ctx.fillRect(x - 5, y - 14, 10, 28);
+        ctx.fillStyle = '#3f8cff';
+        ctx.fillRect(x - 5, y - 6, 10, 6);
+        ctx.fillStyle = '#ff3b4e';
+        ctx.fillRect(x - 5, y + 2, 10, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - 3, y - 18, 6, 6);
+        ctx.fillStyle = '#1c3f99';
+        ctx.fillRect(x - 11, y + 6, 4, 10);
+        ctx.fillRect(x + 7, y + 6, 4, 10);
         break;
       }
       default:
@@ -292,12 +464,20 @@ export class WorldRenderer {
   }
 
   private drawLaser(ctx: CanvasRenderingContext2D, w: World): void {
-    for (const bm of w.laser.beams) this.drawBeam(ctx, w.laser.width / 2, bm.sx, bm.sy, bm.tx, bm.ty, bm.target !== null);
+    const tier = laserStats(w.inventory.level('red'))?.tier ?? 1;
+    for (const bm of w.laser.beams) {
+      this.drawBeam(ctx, bm.w / 2, bm.sx, bm.sy, bm.tx, bm.ty, bm.target !== null, bm.main, tier);
+      if (bm.chain) {
+        // Chain lightning: a thinner arc from the first target to the second.
+        this.drawBeam(ctx, bm.w / 4, bm.tx, bm.ty, bm.cx, bm.cy, true, false, tier);
+      }
+    }
   }
 
   /** One electric beam from (sx, sy) to (ex, ey). */
   private drawBeam(
     ctx: CanvasRenderingContext2D, hw: number, sx: number, sy: number, ex: number, ey: number, locked: boolean,
+    main = false, tier = 1,
   ): void {
     const len = Math.hypot(ex - sx, ey - sy);
     if (len < 1) return;
@@ -321,16 +501,16 @@ export class WorldRenderer {
       pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
       ctx.stroke();
     };
-    // Soft straight glow along the beam axis.
-    ctx.strokeStyle = 'rgba(255,59,78,0.18)';
+    // Soft straight glow along the beam axis; brighter with the red level, white-hot for the main beam.
+    ctx.strokeStyle = main ? 'rgba(255,200,205,0.3)' : `rgba(255,59,78,${0.12 + 0.03 * tier})`;
     ctx.lineWidth = hw * 2;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(ex, ey);
     ctx.stroke();
     stroke(hw, 'rgba(255,59,78,0.55)');
-    stroke(6 * S, '#ff3b4e');
-    stroke(2 * S, '#ffffff');
+    stroke(main ? 10 * S : 6 * S, main ? '#ff7a86' : '#ff3b4e');
+    stroke(main ? 4 * S : 2 * S, '#ffffff');
     // Small electric branches.
     ctx.strokeStyle = '#ffc0c6';
     ctx.lineWidth = 2 * S;
