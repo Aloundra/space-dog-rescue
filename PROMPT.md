@@ -1,125 +1,125 @@
-# Prompt — Projet « Iron Chouquette »
+# Prompt — Project "Iron Chouquette"
 
-## Rôle
-Tu es un développeur senior TypeScript spécialisé en jeux 2D web. Tu travailles de façon autonome, par étapes, en vérifiant chaque étape avant de passer à la suivante.
+## Role
+You are a senior TypeScript developer specialized in 2D web games. You work autonomously, in steps, verifying each step before moving on to the next.
 
-## Objectif
-Recréer **Iron Chouquette**, un shoot'em up issu de l'ancien site Flash kadokado.com : le joueur pilote un vaisseau qui tente de récupérer son chien kidnappé par des vaisseaux ennemis. Hommage fidèle dans l'esprit, pas une copie de fichiers d'origine (aucun asset original, tout est recréé).
+## Goal
+Recreate **Iron Chouquette**, a shoot'em up from the former Flash site kadokado.com: the player pilots a ship that tries to rescue its dog, kidnapped by enemy ships. A faithful tribute in spirit, not a copy of the original files (no original assets; everything is recreated).
 
-## Stack et contraintes
-- TypeScript (strict) + Canvas 2D + Vite. Aucune librairie de jeu (pas de Phaser, etc.). Dépendances de dev uniquement : vite, typescript, vitest.
-- Graphismes : **pixel art généré procéduralement** (sprites définis en code sous forme de matrices/palettes, rendus sur canvas hors-écran, mis en cache, `imageSmoothingEnabled = false`). Aucun fichier image externe.
-- **Aucun son** (le jeu d'origine n'en avait pas).
-- Résolution logique fixe 800×1000 (zone de jeu + cadre + barre du bas), mise à l'échelle dans la fenêtre en conservant le ratio, centrée (échelle < 1 autorisée si la fenêtre est plus petite). Les sprites pixel art sont dessinés sur une grille de pixels « gros » (ex. 1 pixel art = 4×4 px logiques) pour garder le rendu pixelisé à cette résolution.
-- Boucle de jeu à pas de temps fixe (60 Hz) découplée du rendu (requestAnimationFrame).
-- Persistance : meilleurs scores (top 10) en `localStorage`.
-- Code lisible, commentaires en anglais, architecture modulaire (voir plus bas). Textes du jeu en français.
+## Stack and constraints
+- TypeScript (strict) + Canvas 2D + Vite. No game library (no Phaser, etc.). Dev dependencies only: vite, typescript, vitest.
+- Graphics: **procedurally generated pixel art** (sprites defined in code as matrices/palettes, rendered to offscreen canvases, cached, `imageSmoothingEnabled = false`). No external image files.
+- **No sound** (the original game had none).
+- Fixed logical resolution 800×1000 (play area + frame + bottom bar), scaled to the window while keeping the ratio, centered (scale < 1 allowed if the window is smaller). Pixel art sprites are drawn on a grid of "big" pixels (e.g. 1 art pixel = 4×4 logical px) to keep the pixelated look at this resolution.
+- Fixed-timestep game loop (60 Hz), decoupled from rendering (requestAnimationFrame).
+- Persistence: best scores (top 10) in `localStorage`.
+- Readable code, comments in English, modular architecture (see below). Game texts in French.
 
-## Contrôles
-- Flèches : déplacement
-- Espace : tir
-- Ctrl ou Shift : sacrifier l'arme la plus récente pour lancer une **salve d'énergie dévastatrice** (efface les projectiles ennemis, inflige de gros dégâts à l'écran ; la puissance dépend de l'arme sacrifiée). Un appui déclenche un seul sacrifice; maintenir la touche ne consomme pas tout l’inventaire.
-- Entrée : valider menu ; Échap/P : pause
+## Controls
+- Arrows: movement
+- Space: fire
+- Ctrl or Shift: sacrifice the most recent weapon to launch a **devastating energy salvo** (clears enemy projectiles, deals heavy damage across the screen; the power depends on the sacrificed weapon). One press triggers a single sacrifice; holding the key does not consume the whole inventory.
+- Enter: confirm in menus; Esc/P: pause
 
-## Mécaniques
-### Armes
-- Les armes sont obtenues en détruisant un vaisseau-porteur en forme de **manette de PlayStation** ; la couleur du porteur indique l'arme.
-- Inventaire : **3 armes maximum** (extensible par certains bonus/options). Si la limite est dépassée, **l'arme la plus ancienne est sacrifiée automatiquement** (file FIFO).
-- Posséder plusieurs exemplaires du même type rend l'arme plus puissante (niveau = nombre d'exemplaires, plafonné raisonnablement).
-- Types :
-  - **Violette** : petites boules violettes dans tous les sens ; plus de niveaux = plus de boules, zone plus large.
-  - **Rose** : augmente la vitesse du vaisseau (cumulatif, plafonné).
-  - **Verte** : améliore l'arme de base (cadence, dégâts, largeur).
-  - **Jaune** : tir des deux côtés à la fois (latéral/arrière selon le niveau).
-  - **Bleue** : lance des missiles (à tête chercheuse légère aux niveaux élevés).
-  - **Rouge** : laser en faisceau électrique (rendu zigzag/éclairs).
-- Chaque arme a une représentation visuelle d'icône dans le HUD (couleur + niveau).
+## Mechanics
+### Weapons
+- Weapons are obtained by destroying a carrier ship shaped like a **PlayStation controller**; the carrier's color indicates the weapon.
+- Inventory: **3 weapons maximum** (extensible through certain bonuses/options). If the limit is exceeded, **the oldest weapon is automatically sacrificed** (FIFO queue).
+- Owning several copies of the same type makes the weapon more powerful (level = number of copies, reasonably capped).
+- Types:
+  - **Violet**: small violet balls in all directions; more levels = more balls, wider area.
+  - **Pink**: increases ship speed (cumulative, capped).
+  - **Green**: improves the base weapon (fire rate, damage, width).
+  - **Yellow**: fires on both sides at once (lateral/rear depending on level).
+  - **Blue**: fires missiles (lightly homing at higher levels).
+  - **Red**: electric beam laser (zigzag/lightning rendering).
+- Each weapon has a visual icon representation in the HUD (color + level).
 
-### Ennemis et points (valeurs exactes)
-| Ennemi | Points |
+### Enemies and points (exact values)
+| Enemy | Points |
 |---|---|
-| Ennemi de base | 65 |
-| Ennemi secondaire | 80 |
-| Ennemi vert | 120 |
-| Bombe à billes | 300 |
-| Lapin robot | 350 |
-| Tourelle de base | 450 |
-| Aimant | 500 |
-| Boules arrivant en V | 600 |
-| Lance-missiles | 800 |
-| Rectangle blindé | 1000 |
-| Tourelle améliorée | 1500 |
-| Tank de base | 2000 |
-| Tank vert | 3500 |
-| Rectangle à missile | 4800 |
-| Disqueuse | 5000 |
-| Tank rouge | 8000 |
+| Basic enemy | 65 |
+| Secondary enemy | 80 |
+| Green enemy | 120 |
+| Ball bomb | 300 |
+| Robot rabbit | 350 |
+| Basic turret | 450 |
+| Magnet | 500 |
+| V-formation balls | 600 |
+| Missile launcher | 800 |
+| Armored rectangle | 1000 |
+| Improved turret | 1500 |
+| Basic tank | 2000 |
+| Green tank | 3500 |
+| Missile rectangle | 4800 |
+| Circular saw | 5000 |
+| Red tank | 8000 |
 
-Chaque ennemi a un comportement distinct (trajectoire, tir, PV) à concevoir de façon cohérente avec son nom : ex. Aimant = attire le vaisseau/les bonus ; Bombe à billes = explose en projectiles ; Lapin robot = déplacements sautillants ; Boules en V = vague en formation V ; Tourelles/tanks = au sol (scrolling), tirs visés ; Disqueuse = projectile/lame rotative ; etc. Le tableau des points est une donnée centralisée (un seul fichier de config).
+Each enemy has a distinct behavior (trajectory, shooting, HP) designed to be coherent with its name: e.g. Magnet = attracts the ship/pickups; Ball bomb = explodes into projectiles; Robot rabbit = hopping movement; V-balls = flying in a V formation; Turrets/tanks = on the ground (scrolling), aimed shots; Circular saw = rotating projectile/blade; etc. The points table is centralized data (a single config file).
 
 ### Progression
-- Scrolling vertical, plusieurs niveaux (min. 4) avec décors différents (parallaxe procédural), vagues scriptées via données (pas codées en dur dans la logique), difficulté croissante.
-- Un boss à la fin de chaque niveau (le dernier ravisseur détient le chien ; écran de fin avec retrouvailles).
-- **Barre de vie avec 3 PV, sans système de vies** : chaque touche retire 1 PV (la barre est découpée en 3 segments), brève invincibilité après dégât, game over à 0 PV. Les armes possédées sont conservées jusqu'à la fin de la partie. Pas de bonus de soin imposé (à décider et documenter dans PLAN.md si l'équilibrage l'exige).
-- Score affiché en continu, bonus de fin de niveau.
+- Vertical scrolling, several levels (min. 4) with different backgrounds (procedural parallax), scripted waves defined via data (not hard-coded in the logic), increasing difficulty.
+- A boss at the end of each level (the last abductor holds the dog; an end screen with the reunion).
+- **Health bar with 3 HP, no lives system**: each hit removes 1 HP (the bar is split into 3 segments), brief invincibility after damage, game over at 0 HP. Owned weapons are kept until the end of the run. No mandatory healing pickup (to be decided and documented in PLAN.md if balancing requires it).
+- Score displayed continuously, end-of-level bonus.
 
-### Écrans
-Menu titre (jouer, comment jouer, meilleurs scores), jeu avec HUD (score, barre de vie 3 PV, armes + niveaux, niveau courant), pause, game over avec saisie du nom si top 10, victoire.
+### Screens
+Title menu (play, how to play, best scores), game with HUD (score, 3-HP health bar, weapons + levels, current level), pause, game over with name entry if in the top 10, victory.
 
-## Références visuelles/gameplay
-Étudie ces vidéos pour le rythme, les patterns ennemis, l'aspect des armes et des décors (ignorer le son) :
+## Visual/gameplay references
+Study these videos for pacing, enemy patterns, and the look of weapons and backgrounds (ignore the sound):
 - https://www.youtube.com/watch?v=Sl3ayGmvMKM
 - https://www.youtube.com/watch?v=-efcI7Qn20o
 - https://www.youtube.com/watch?v=jpe5Y01jzkE
-Le jeu d'origine est rejouable via le projet communautaire Eternaltwin : https://kadokadeo.eternaltwin.org/games/3 (utile comme référence de ressenti si accessible ; ne rien copier de ses fichiers).
-Si tu ne peux pas consulter ces références, dis-le explicitement et base-toi sur la description ci-dessous sans inventer de détails présentés comme fidèles.
+The original game can be replayed via the Eternaltwin community project: https://kadokadeo.eternaltwin.org/games/3 (useful as a reference for feel if accessible; copy nothing from its files).
+If you cannot consult these references, say so explicitly and base yourself on the description below without inventing details presented as faithful.
 
-## Observations tirées des vidéos (à respecter dans l'esprit)
-Ces notes viennent d'images extraites des 3 vidéos (runs de record, ~7 min chacune, scores jusqu'à ~350 000 ; une vidéo est un run « WR 350k »).
-- **Format** : zone de jeu **portrait, quasi carrée-haute (~ 4:5)**, entourée d'un cadre clair bleu-cyan « glacé ». Prévoir cette ambiance d'interface (cadre + barre du bas), pas un plein écran noir.
-- **Fond** : nébuleuse **violet/indigo foncé** avec champ d'étoiles blanches, scrolling vertical lent et continu. Le fond est le même sur la durée visionnée : les variations de « niveaux » sont à créer par teintes/densité (le jeu d'origine semble surtout une progression continue de difficulté avec peu de ruptures visuelles). Garder des écrans-titres de niveau discrets plutôt qu'une grosse cinématique.
-- **HUD (barre du bas, clair/cyan)** : à gauche une petite icône/compteur, puis une **barre de vie rose/rouge horizontale** (dans notre version : 3 segments de PV, un segment perdu par touche), et à droite le **score sur 7 chiffres** (ex. `0129595`) en grands chiffres contour bleu clair. **Colonne de petites cases carrées en bas à gauche** de la zone de jeu = **emplacements d'armes** (chaque case colorée selon l'arme possédée : jaune, vert, violet…). Les scores gagnés s'affichent brièvement en **petits nombres blancs flottants** à l'endroit du kill (ex. « 350 », « 3500 »).
-- **Vaisseau du joueur** : petit, clair (blanc/bleu pâle), avec réacteurs orange en bas ; une **lueur/aura jaune** apparaît devant lui quand l'arme de base/jaune est active.
-- **Tirs du joueur** : nombreux petits projectiles **jaune-vert allongés (en forme de goutte/flamme)** en éventail serré ; la densité augmente avec les armes. Un **missile bleu** laisse un petit sillage tournoyant bleu clair ; des anneaux/halos concentriques translucides accompagnent certains tirs/explosions (effet « onde »).
-- **Ennemis vus** : petits appareils blancs/crème à bulbes dorés (ennemi de base) ; **disques orange à spirale concentrique (« escargot »/ondes orange)** arrivant en nombre et en formation, ils descendent en essaims ; **rectangles gris-blanc type boîtier/cartouche avec petit écran vert** (rectangles blindés / « rectangle à missile »), souvent en colonnes de 2-3 qui descendent ; **gros capsules/tourelles grises à cylindre** ; petits **lapins robots blancs à grandes oreilles** (nombre « 350 » vu à l'écran, cohérent avec le tableau) ; grosses **unités rose/saumon à pinces/ailes** (tanks/disqueuse) avec traînée rouge ou lames ; **cercles/anneaux blancs** (type lame circulaire).
-- **Tirs ennemis** : petites pastilles **rouge/rose**, carrés **jaune pâle** et **billes vertes**, en grandes nappes lentes (le jeu devient un « bullet hell » léger en fin de run) ; quelques orbes violet foncé aux contours sombres. Les couleurs de tirs ennemis doivent rester bien lisibles sur le fond violet et distinctes de celles du joueur.
-- **Explosions** : boules de feu orange/jaune stylisées, avec fumée/traînée **rouge sombre** persistante pour les gros ennemis détruits.
-- **Rythme** : le joueur est constamment sous une pluie de vagues ; l'écran est dense mais lisible ; les ennemis arrivent par le haut et par les côtés. Les gros ennemis (tanks/rectangles) sont pris en charge par concentration de tir.
-- **Fin de partie** : écran de score du site (hors périmètre — à remplacer par notre propre écran game over / high scores).
+## Observations from the videos (to respect in spirit)
+These notes come from images extracted from the 3 videos (record runs, ~7 min each, scores up to ~350,000; one video is a "WR 350k" run).
+- **Format**: **portrait** play area, roughly 4:5, surrounded by a light blue-cyan "icy" frame. Plan for this interface feel (frame + bottom bar), not a full black screen.
+- **Background**: dark **violet/indigo** nebula with a field of white stars, slow continuous vertical scrolling. The background stays the same over the whole viewed duration: "level" variations are to be created through tints/density (the original seems mainly a continuous difficulty progression with few visual breaks). Keep level-title screens discreet rather than a big cutscene.
+- **HUD (bottom bar, light/cyan)**: on the left a small icon/counter, then a horizontal **pink/red health bar** (in our version: 3 HP segments, one segment lost per hit), and on the right the **7-digit score** (e.g. `0129595`) in large digits with a light blue outline. **Column of small square cells at the bottom left of the play area** = **weapon slots** (each cell colored by the weapon owned: yellow, green, violet…). Points gained briefly appear as **small floating white numbers** at the kill location (e.g. "350", "3500").
+- **Player ship**: small, light (white/pale blue), with orange thrusters at the bottom; a **yellow glow/aura** appears in front of it when the base/yellow weapon is active.
+- **Player shots**: many small **yellow-green elongated projectiles (drop/flame-shaped)** in a tight fan; density increases with weapons. A **blue missile** leaves a small swirling light-blue trail; translucent concentric rings/halos accompany some shots/explosions (a "wave" effect).
+- **Enemies seen**: small white/cream devices with golden bulbs (basic enemy); **orange discs with concentric spirals ("snail"/orange waves)** arriving in numbers and formations, descending in swarms; **grey-white rectangles resembling a cartridge/box with a small green screen** (armored rectangles / "missile rectangle"), often in columns of 2-3 descending; **large grey cylindrical capsules/turrets**; small **white robot rabbits with large ears** (the "350" figure seen on screen, consistent with the table); large **pink/salmon units with claws/wings** (tanks/circular saw) with a red trail or blades; **white circles/rings** (circular-blade type).
+- **Enemy shots**: small **red/pink dots**, pale **yellow squares** and **green balls**, in large slow sheets (the game becomes a light "bullet hell" late in a run); a few dark violet orbs with dark outlines. Enemy shot colors must stay clearly readable on the violet background and distinct from the player's.
+- **Explosions**: stylized orange/yellow fireballs, with a persistent **dark red** smoke/trail for large destroyed enemies.
+- **Pacing**: the player is constantly under a rain of waves; the screen is dense but readable; enemies come from the top and from the sides. Large enemies (tanks/rectangles) are handled by concentrated fire.
+- **End of run**: the site's score screen (out of scope — to be replaced by our own game over / high scores screen).
 
-### Notes d'adaptation
-- Les designs d'origine (formes de « cartouche » grise à écran vert notamment) doivent être **redessinés de façon originale** (ex. caisson blindé gris à hublot vert), sans reproduire d'objet de marque.
-- **Décision imposée : barre de vie de 3 PV seule, sans système de vies.** Quand la barre tombe à zéro, c'est le game over. Pas de compteur de vies ni de continue.
-- Score en 7 chiffres, avec zéros de tête.
+### Adaptation notes
+- The original designs (notably the grey "cartridge" shape with a green screen) must be **redrawn in an original way** (e.g. an armored grey box with a green porthole), without reproducing any branded object.
+- **Imposed decision: a 3-HP health bar only, no lives system.** When the bar reaches zero, it is game over. No lives counter or continue.
+- Score in 7 digits, with leading zeros.
 
-## Architecture suggérée
-`src/` : `main.ts`, `core/` (loop, input, scaling, state machine), `game/` (player, weapons, enemies, bullets, bosses, levels, collisions, score), `data/` (enemies.ts, weapons.ts, levels.ts), `render/` (sprites procéduraux, palettes, parallaxe, HUD), `ui/` (menus, high scores), `tests/`.
-Utilise un pool d'objets pour projectiles/particules, et des collisions AABB/cercles simples.
+## Suggested architecture
+`src/`: `main.ts`, `core/` (loop, input, scaling, state machine), `game/` (player, weapons, enemies, bullets, bosses, levels, collisions, score), `data/` (enemies.ts, weapons.ts, levels.ts), `render/` (procedural sprites, palettes, parallax, HUD), `ui/` (menus, high scores), `tests/`.
+Use an object pool for projectiles/particles, and simple AABB/circle collisions.
 
-## Méthode de travail (obligatoire)
-1. **Plan** : commence par écrire un `PLAN.md` (jalons, décisions ouvertes, hypothèses). Pose au plus quelques questions bloquantes, sinon décide et documente.
-2. **Jalons incrémentaux**, chacun jouable et vérifié avant le suivant :
-   1. Scaffold Vite/TS, boucle, input, mise à l'échelle
-   2. Vaisseau + tir de base + scrolling
-   3. Ennemis de base + collisions + score + barre de vie (3 PV)
-   4. Système d'armes (inventaire FIFO, niveaux, 6 types) + salve sacrifiée
-   5. Catalogue complet des ennemis (16 types) + porteurs « manette »
-   6. Niveaux, vagues en données, boss
-   7. Menus, pause, game over, high scores localStorage, écran de victoire
-   8. Polish : particules, effets, équilibrage, perf
-3. **Vérification** : tests unitaires (Vitest) pour la logique pure (inventaire d'armes FIFO, sacrifice de l'arme la plus récente, niveaux d'armes, PV/game over, table des scores, high scores) ; `tsc --noEmit` et build Vite sans erreur ; lancement réel du jeu dans un navigateur avec captures d'écran à chaque jalon pour contrôle visuel.
-4. Ne déclare jamais une étape terminée sans l'avoir exécutée ; rapporte honnêtement ce qui ne marche pas.
-5. Commits Git par jalon, messages clairs.
+## Working method (mandatory)
+1. **Plan**: start by writing a `PLAN.md` (milestones, open decisions, assumptions). Ask at most a few blocking questions; otherwise decide and document.
+2. **Incremental milestones**, each playable and verified before the next:
+   1. Vite/TS scaffold, loop, input, scaling
+   2. Ship + base shot + scrolling
+   3. Basic enemies + collisions + score + health bar (3 HP)
+   4. Weapon system (FIFO inventory, levels, 6 types) + sacrifice salvo
+   5. Full enemy catalogue (16 types) + "gamepad" carriers
+   6. Levels, data-driven waves, bosses
+   7. Menus, pause, game over, localStorage high scores, victory screen
+   8. Polish: particles, effects, balancing, performance
+3. **Verification**: unit tests (Vitest) for pure logic (FIFO weapon inventory, sacrifice of the most recent weapon, weapon levels, HP/game over, score table, high scores); `tsc --noEmit` and Vite build without errors; actually running the game in a browser with screenshots at each milestone for visual checks.
+4. Never declare a step done without having executed it; honestly report what does not work.
+5. Git commits per milestone, with clear messages.
 
-## Critères d'acceptation
-- Les contrôles, la limite de 3 armes avec sacrifice FIFO, la salve Ctrl/Shift et les 6 armes (avec montée en puissance par doublons) fonctionnent comme décrit.
-- Les 16 ennemis existent avec les points exacts du tableau.
-- Barre de vie à 3 PV, game over à 0 PV, aucun système de vies.
-- Ctrl/Shift : un appui = un seul sacrifice (l'arme la plus récente) ; une salve sans arme ne fait rien.
-- Colonne d'emplacements d'armes colorés, nombres de points flottants, effet d'onde/halo sur certains tirs, tirs ennemis lisibles en forte densité à 60 FPS.
-- ≥ 4 niveaux avec boss, fin avec le chien retrouvé.
-- 60 FPS stables sur un PC standard, zéro asset image/audio externe.
-- `npm run dev`, `npm run build`, `npm test` fonctionnent ; un README explique comment lancer et jouer.
+## Acceptance criteria
+- Controls, the 3-weapon limit with FIFO sacrifice, the Ctrl/Shift salvo, and the 6 weapons (with power growth through duplicates) work as described.
+- The 16 enemies exist with the exact points from the table.
+- Health bar at 3 HP, game over at 0 HP, no lives system.
+- Ctrl/Shift: one press = one sacrifice (the most recent weapon); a salvo with no weapon does nothing.
+- Column of colored weapon slots, floating point numbers, wave/halo effect on some shots, enemy shots readable at high density at 60 FPS.
+- At least 4 levels with bosses; ending with the dog rescued.
+- Stable 60 FPS on a standard PC, zero external image/audio assets.
+- `npm run dev`, `npm run build`, `npm test` work; a README explains how to run and play.
 
-## Livrable final
-Rapport court : ce qui est fait, ce qui est vérifié (et comment), limites connues, choix de conception non spécifiés (comportements ennemis, équilibrage).
+## Final deliverable
+Short report: what is done, what is verified (and how), known limitations, design choices not specified (enemy behaviors, balancing).
