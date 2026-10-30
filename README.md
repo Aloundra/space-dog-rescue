@@ -27,7 +27,7 @@ npm test           # unit tests + headless simulation of a full run
 - **Health bar: 3 HP**, no lives. At 0 HP, the game is over.
 - Destroy the ships shaped like a **gamepad** (neutral grey) to release a surprise weapon.
 - **5 weapons maximum** (each boss drops a "+1 slot", up to 8). Beyond that, the oldest weapon is sacrificed automatically (and triggers its salvo).
-- Several copies of the same weapon = a more powerful weapon (max level 4).
+- Several copies of the same weapon = a more powerful weapon (max level 8, one per slot).
 
 | Weapon | Effect |
 |---|---|

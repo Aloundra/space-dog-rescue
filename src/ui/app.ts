@@ -27,6 +27,7 @@ export class App {
   private scores: HighScore[];
   private storage = browserStorage();
   private nameBuffer = '';
+  private confirmQuit = false;
   private highlight = -1;
   private time = 0;
   private lastFrame = performance.now();
@@ -41,6 +42,7 @@ export class App {
   private go(s: Screen): void {
     this.screen = s;
     this.screenT = 0;
+    this.confirmQuit = false;
   }
 
   private startGame(): void {
@@ -81,8 +83,15 @@ export class App {
         break;
       }
       case 'pause':
-        if (inp.wasPressed(...KEYS.pause) || confirm) this.go('game');
-        else if (inp.wasPressed('KeyQ')) { this.world = null; this.go('title'); }
+        if (this.confirmQuit) {
+          // Quit needs a second, explicit confirmation: Enter = quit, Esc/P = stay.
+          if (confirm) { this.confirmQuit = false; this.world = null; this.go('title'); }
+          else if (inp.wasPressed(...KEYS.pause)) this.confirmQuit = false;
+        } else if (inp.wasPressed(...KEYS.pause) || confirm) {
+          this.go('game');
+        } else if (inp.wasPressed('KeyQ')) {
+          this.confirmQuit = true;
+        }
         break;
       case 'gameover':
       case 'victory':
@@ -269,6 +278,11 @@ export class App {
   private drawPause(): void {
     this.dim(0.6);
     drawText(this.ctx, 'PAUSE', PLAY_W / 2, PLAY_H / 2 - 40, 64, '#ffe25a');
+    if (this.confirmQuit) {
+      drawText(this.ctx, 'Quit this run?', PLAY_W / 2, PLAY_H / 2 + 30, 26, '#ff4f7b');
+      drawText(this.ctx, 'Enter: quit to menu    Esc / P: stay', PLAY_W / 2, PLAY_H / 2 + 66, 22, '#e2f6ff');
+      return;
+    }
     drawText(this.ctx, 'Esc / P / Enter: resume', PLAY_W / 2, PLAY_H / 2 + 30, 22, '#e2f6ff');
     drawText(this.ctx, 'Q: quit to menu', PLAY_W / 2, PLAY_H / 2 + 66, 22, '#e2f6ff');
   }

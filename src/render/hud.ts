@@ -1,6 +1,6 @@
 // Icy frame around the play area + bottom HUD bar (level, HP bar, score).
 import { HUD_H, HUD_Y, PLAY_H, PLAY_W, PLAY_X, PLAY_Y, PLAYER_MAX_HP, PX, VIEW_H, VIEW_W } from '../config';
-import { MAX_SLOTS, WEAPONS } from '../data/weapons';
+import { MAX_SLOTS, WEAPONS, type WeaponType } from '../data/weapons';
 import type { WeaponInventory } from '../game/inventory';
 import { formatScore } from '../game/score';
 import { drawDigits, drawText } from './text';
@@ -94,9 +94,23 @@ export function drawHud(ctx: CanvasRenderingContext2D, s: HudState): void {
   drawDigits(ctx, formatScore(s.score), right, cy - 20, 8, '#ffffff', '#4f9fd1', 'right');
 }
 
+/**
+ * 5x5 symbol per weapon type, so the slots stay readable without relying on colour alone.
+ * '#' = lit cell. Shapes: violet = scattered balls, pink = speed chevron, green = plus (upgrade),
+ * yellow = fan to both sides, blue = missile, red = lightning beam.
+ */
+const WEAPON_GLYPHS: Record<WeaponType, readonly string[]> = {
+  violet: ['#.#.#', '.....', '..#..', '.....', '#.#.#'],
+  pink: ['..#..', '.###.', '#.#.#', '..#..', '..#..'],
+  green: ['..#..', '..#..', '#####', '..#..', '..#..'],
+  yellow: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'],
+  blue: ['..#..', '.###.', '.###.', '.#.#.', '#...#'],
+  red: ['..##.', '.#...', '#####', '...#.', '.##..'],
+};
+
 /** Column of weapon slots at the bottom-left of the play area. */
 export function drawWeaponSlots(ctx: CanvasRenderingContext2D, inv: WeaponInventory): void {
-  const size = 28;
+  const size = 36;
   const gap = 6;
   const x = 10;
   const bottom = PLAY_H - 12;
@@ -116,7 +130,17 @@ export function drawWeaponSlots(ctx: CanvasRenderingContext2D, inv: WeaponInvent
       ctx.fillStyle = w.dark;
       ctx.fillRect(x, y + size - PX, size, PX);
       ctx.fillRect(x + size - PX, y, PX, size);
-      drawDigits(ctx, String(inv.level(t)), x + size / 2, y + 7, 3, '#ffffff', '#120c2a', 'center');
+      // Level digit at the top, symbol below it.
+      drawDigits(ctx, String(inv.level(t)), x + size / 2, y + 4, 2, '#ffffff', '#120c2a', 'center');
+      const cell = 3;
+      const gx = x + (size - 5 * cell) / 2;
+      const gy = y + size - 4 - 5 * cell;
+      ctx.fillStyle = '#ffffff';
+      WEAPON_GLYPHS[t].forEach((row, r) => {
+        for (let c = 0; c < 5; c++) {
+          if (row[c] === '#') ctx.fillRect(gx + c * cell, gy + r * cell, cell, cell);
+        }
+      });
     } else {
       ctx.strokeStyle = '#6fb7d6';
       ctx.lineWidth = 2;
