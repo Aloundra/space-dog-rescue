@@ -63,7 +63,7 @@ Les choix de conception non spécifiés par le cahier des charges sont listés d
 
 ## Déploiement local (LAN)
 
-Le jeu est servi en continu sur **http://192.168.0.20:5280** par un service systemd utilisateur
+Le jeu est servi en continu sur **http://127.0.0.1:5280** par un service systemd utilisateur
 (`deploy/space-dog-rescue.service`, installé dans `~/.config/systemd/user/`). Au démarrage, il rebuild puis lance `vite preview` sur `0.0.0.0:5280`.
 
 ```bash
