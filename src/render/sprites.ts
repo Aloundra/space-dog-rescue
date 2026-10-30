@@ -1,7 +1,7 @@
 // Builds pixel-art sprites onto cached offscreen canvases.
 import { PX } from '../config';
 import { LEVELS } from '../data/levels';
-import { WEAPONS, WEAPON_TYPES, type WeaponType } from '../data/weapons';
+import { WEAPONS, WEAPON_TYPES } from '../data/weapons';
 import { bossHalfRows, sphere, sawBlade, spiralDisc, tankRows, turretRows } from './procedural';
 import { BASE_PALETTE, SPRITES, expandRows } from './spriteData';
 
@@ -40,6 +40,9 @@ function whiten(palette: Record<string, string>): Record<string, string> {
 }
 
 
+/** Neutral body colour of the gamepad-shaped weapon carriers. */
+export const CARRIER_COLOR = '#9aa3b8';
+
 /** All game sprites, generated once at startup. */
 export class SpriteBank {
   private sprites = new Map<string, Sprite>();
@@ -52,11 +55,13 @@ export class SpriteBank {
 
     for (const t of WEAPON_TYPES) {
       const info = WEAPONS[t];
-      this.add(`carrier_${t}`, expandRows(SPRITES.carrier), { ...SPRITES.carrier.palette, X: info.color });
       this.add(`pickup_${t}`, expandRows(SPRITES.pickup), {
         ...SPRITES.pickup.palette, X: info.color, L: info.light, D: info.dark,
       });
     }
+
+    // Weapon carriers share one neutral steel-grey sprite: the weapon inside cannot be guessed.
+    this.add('carrier', expandRows(SPRITES.carrier), { ...SPRITES.carrier.palette, X: CARRIER_COLOR });
 
     for (let i = 0; i < 4; i++) this.add(`vBall_${i}`, spiralDisc(4, i / 4), BASE_PALETTE);
     for (let i = 0; i < 3; i++) this.add(`grinder_${i}`, sawBlade(8, 10, i / 3), BASE_PALETTE);
@@ -102,9 +107,6 @@ export class SpriteBank {
   }
 }
 
-export function carrierSprite(t: WeaponType): string {
-  return `carrier_${t}`;
-}
 
 /** Draws a sprite centred on (x, y), with optional rotation and scale. */
 export function drawSprite(

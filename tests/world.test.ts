@@ -105,26 +105,26 @@ describe('World simulation', () => {
     near.hp = far.hp = 5000;
     input.down.add('Space');
     w.update(STEP, input);
-    expect(w.laser.target).toBe(near);
+    expect((w.laser.beams[0]?.target ?? null)).toBe(near);
     // Moving the far enemy closer does not steal the lock.
     far.x = w.player.x; far.y = w.player.y - 60;
     for (let i = 0; i < 30; i++) w.update(STEP, input);
-    expect(w.laser.target).toBe(near);
+    expect((w.laser.beams[0]?.target ?? null)).toBe(near);
     expect(near.hp).toBeLessThan(5000);
     // Release: lock dropped.
     input.down.delete('Space');
     w.update(STEP, input);
-    expect(w.laser.target).toBeNull();
+    expect((w.laser.beams[0]?.target ?? null)).toBeNull();
     // Fire again: the nearest one is now `far`.
     input.down.add('Space');
     w.update(STEP, input);
-    expect(w.laser.target).toBe(far);
+    expect((w.laser.beams[0]?.target ?? null)).toBe(far);
     // Kill it: the lock moves to the next nearest.
     far.hp = 0.0001;
     w.update(STEP, input);
     w.update(STEP, input);
     expect(far.dead).toBe(true);
-    expect(w.laser.target).toBe(near);
+    expect((w.laser.beams[0]?.target ?? null)).toBe(near);
   });
 
   it('blue missiles home in on the nearest enemy', () => {
@@ -143,7 +143,7 @@ describe('World simulation', () => {
     expect(e.hp).toBeLessThan(5000);
   });
 
-  it('yellow side shots go at +45 deg while ArrowDown is held', () => {
+  it('yellow side shots go upward at 45 deg while ArrowDown is held (inverted mapping)', () => {
     const w = new World(5, { weapons: ['yellow'], god: true });
     const input = new FakeInput();
     w.phase = 'waves';
@@ -153,8 +153,31 @@ describe('World simulation', () => {
     const side = w.pShots.items.filter((b) => b.active && b.style === 'side');
     expect(side).toHaveLength(2);
     for (const b of side) {
-      expect(b.vy).toBeGreaterThan(0);
+      expect(b.vy).toBeLessThan(0);
       expect(Math.abs(b.vy)).toBeCloseTo(Math.abs(b.vx));
     }
+  });
+
+  it('red: each level adds a beam, each beam locks a different enemy', () => {
+    const w = new World(5, { weapons: ['red', 'red', 'red'], god: true });
+    const input = new FakeInput();
+    w.phase = 'waves';
+    w.enemies = [];
+    const a = w.spawnEnemy('armoredRect', 200, 300, 0);
+    const b = w.spawnEnemy('armoredRect', 500, 300, 0);
+    a.hp = b.hp = 5000;
+    input.down.add('Space');
+    w.update(STEP, input);
+    expect(w.laser.beams).toHaveLength(3);
+    const targets = w.laser.beams.map((bm) => bm.target);
+    expect(new Set(targets.slice(0, 2)).size + new Set(targets).size).toBeGreaterThanOrEqual(3);
+    expect(targets).toContain(a);
+    expect(targets).toContain(b);
+    // Sacrificing one red weapon removes one beam.
+    input.pressed.add('ShiftLeft');
+    w.update(STEP, input);
+    input.pressed.clear();
+    w.update(STEP, input);
+    expect(w.laser.beams).toHaveLength(2);
   });
 });

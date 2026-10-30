@@ -74,7 +74,7 @@ export class WorldRenderer {
     switch (e.kind) {
       case 'vBall': name = `vBall_${Math.floor(w.time * 10 + e.a * 3) % 4}`; break;
       case 'grinder': name = `grinder_${Math.floor(w.time * 18) % 3}`; break;
-      case 'carrier': name = `carrier_${e.weapon ?? 'green'}`; break;
+      case 'carrier': name = 'carrier'; break;
       case 'robotRabbit': name = 'robotRabbit'; sy = e.b > 0.6 ? 0.85 : 1; break;
       case 'marbleBomb': name = 'marbleBomb'; rot = Math.round(e.t * 4) * (Math.PI / 8); break;
       default: name = e.kind;
@@ -292,13 +292,13 @@ export class WorldRenderer {
   }
 
   private drawLaser(ctx: CanvasRenderingContext2D, w: World): void {
-    const p = w.player;
-    const hw = w.laser.width / 2;
-    // Beam from the ship nose to the locked target (or straight up when nothing is locked).
-    const sx = p.x;
-    const sy = p.y - 26 * S;
-    const ex = w.laser.tx;
-    const ey = w.laser.ty;
+    for (const bm of w.laser.beams) this.drawBeam(ctx, w.laser.width / 2, bm.sx, bm.sy, bm.tx, bm.ty, bm.target !== null);
+  }
+
+  /** One electric beam from (sx, sy) to (ex, ey). */
+  private drawBeam(
+    ctx: CanvasRenderingContext2D, hw: number, sx: number, sy: number, ex: number, ey: number, locked: boolean,
+  ): void {
     const len = Math.hypot(ex - sx, ey - sy);
     if (len < 1) return;
     const ux = (ex - sx) / len;
@@ -341,7 +341,7 @@ export class WorldRenderer {
       ctx.lineTo(x + (Math.random() - 0.5) * hw * 3, y + (Math.random() - 0.5) * 20 * S);
       ctx.stroke();
     }
-    if (w.laser.target) {
+    if (locked) {
       // Impact flare on the locked target.
       const r = hw * (0.8 + Math.random() * 0.4);
       ctx.fillStyle = 'rgba(255,192,198,0.6)';

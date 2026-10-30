@@ -231,7 +231,7 @@ export class App {
     drawText(ctx, 'Les armes (détruisez les vaisseaux « manette »)', cx, 246, 21, '#ffc6e2');
     WEAPON_TYPES.forEach((t, i) => {
       const y = 282 + i * 34;
-      drawSprite(ctx, this.bank.get(`carrier_${t}`), 70, y, 0, 0.6, 0.6);
+      drawSprite(ctx, this.bank.get(`pickup_${t}`), 70, y, 0, 0.8, 0.8);
       drawText(ctx, `${WEAPONS[t].name} : ${WEAPONS[t].description}`, 110, y, 18, WEAPONS[t].light, 'left');
     });
     drawText(ctx, 'Plusieurs armes identiques = arme plus puissante', cx, 494, 17, '#e2f6ff', 'center', '#120c2a', 'normal');

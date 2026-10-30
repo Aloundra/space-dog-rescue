@@ -24,15 +24,15 @@
   (a sacrifice is always a salvo in this game).
 - **Salvo**: clears every enemy bullet, damages every on-screen enemy (bosses take 1/3), short invulnerability.
   Damage depends on the sacrificed weapon type and its level before removal.
-- **Weapon levels**: level = number of copies of a type, capped at 4. Each level = +25% damage and +25%
+- **Weapon levels**: level = number of copies of a type, no cap (up to the 8 slots). Past level 4, fire-rate gains are clamped (green interval >= 0.07 s, blue >= 0.35 s); damage/size keep growing. Each level = +25% damage and +25%
   projectile size (linear: level n = x(1 + 0.25(n-1)); green: x(1 + 0.25n) over the bare gun). Losing a level removes 25%.
 - **Violet**: balls live until they leave the screen. **Yellow**: one shot per side per level (narrow fan);
-  no arrow = horizontal, Down held = +45 deg, Up held = -45 deg. **Blue**: missiles lock the nearest enemy at launch,
-  retarget the nearest one when it dies. **Red**: beam locks the nearest enemy until it dies (then next nearest) or
+  no arrow = horizontal, Up held = shots tilted down (+45 deg), Down held = shots tilted up (-45 deg). **Blue**: missiles lock the nearest enemy at launch,
+  retarget the nearest one when it dies. **Red**: one beam per level; each locks the nearest enemy not locked by another beam (shares one if none left) until it dies or
   fire is released; with nothing to lock it goes straight up.
 - **Entity scale** (`GAME_SCALE` = 1.5): ship, enemies, bosses, bullets, pickups, particles, score popups and hitboxes
   are 1.5x (sprites at 6 px per art pixel). HUD, menus and overlays are unchanged.
-- **Carrier ("manette")**: points not given by the brief → 200 points. Its colour is the weapon it drops.
+- **Carrier ("manette")**: points not given by the brief → 200 points. Neutral steel-grey for every weapon: the dropped weapon cannot be guessed.
 - **Bosses**: one per level (4). Points: 10 000 / 15 000 / 25 000 / 50 000. The last one holds the dog.
 - **Level end bonus**: 5 000 × level + 2 500 × remaining HP.
 - **Score**: 7 digits with leading zeros (caps at 9 999 999).

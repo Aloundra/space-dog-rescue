@@ -54,14 +54,14 @@ describe('weapon level growth (+25% damage and size per level, -25% when a level
 });
 
 describe('yellow side shots follow the vertical arrows', () => {
-  it('level 1: horizontal, +45 deg with down, -45 deg with up', () => {
+  it('level 1: horizontal, Up held = shots tilted down (+45 deg), Down held = shots tilted up (-45 deg)', () => {
     expect(sideShots(1, 0)!.angles).toEqual([0, Math.PI]);
-    const down = sideShots(1, 1)!.angles;
-    expect(down[0]).toBeCloseTo(Math.PI / 4);
-    expect(down[1]).toBeCloseTo((3 * Math.PI) / 4);
     const up = sideShots(1, -1)!.angles;
-    expect(up[0]).toBeCloseTo(-Math.PI / 4);
-    expect(up[1]).toBeCloseTo((3 * Math.PI) / 4 + Math.PI / 2);
+    expect(up[0]).toBeCloseTo(Math.PI / 4);
+    expect(up[1]).toBeCloseTo((3 * Math.PI) / 4);
+    const down = sideShots(1, 1)!.angles;
+    expect(down[0]).toBeCloseTo(-Math.PI / 4);
+    expect(down[1]).toBeCloseTo((5 * Math.PI) / 4);
   });
 });
 

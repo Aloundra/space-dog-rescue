@@ -48,14 +48,22 @@ export interface Player {
   firing: boolean;
 }
 
-export interface Laser {
-  active: boolean;
-  width: number;
-  /** Locked target (nearest enemy when firing starts); null = beam goes straight up. */
+/** One red beam. Red level n = n beams. */
+export interface Beam {
+  /** Locked target; kept until it dies or fire is released. null = beam goes straight up. */
   target: Target | null;
-  /** Beam end point. */
+  /** Beam origin (ship nose + horizontal offset) and end point, updated every step. */
+  sx: number;
+  sy: number;
   tx: number;
   ty: number;
+}
+
+export interface Laser {
+  active: boolean;
+  /** Width of each beam. */
+  width: number;
+  beams: Beam[];
 }
 
 export class World {
@@ -65,7 +73,7 @@ export class World {
     x: PLAY_W / 2, y: PLAY_H - 90 * S, hp: PLAYER_MAX_HP, invuln: 0, fireT: 0, violetT: 0, missileT: 0,
     missileSide: 1, dead: false, moving: 0, firing: false,
   };
-  readonly pShots = new Pool<Bullet>(600, makeBullet);
+  readonly pShots = new Pool<Bullet>(1500, makeBullet);
   readonly eShots = new Pool<Bullet>(900, makeBullet);
   readonly particles = new Pool<Particle>(1200, makeParticle);
   enemies: Enemy[] = [];
@@ -73,7 +81,7 @@ export class World {
   texts: FloatText[] = [];
   salvos: Salvo[] = [];
   boss: Boss | null = null;
-  laser: Laser = { active: false, width: 0, target: null, tx: 0, ty: 0 };
+  laser: Laser = { active: false, width: 0, beams: [] };
   events: WorldEvent[] = [];
 
   levelIndex = 0;
@@ -147,7 +155,7 @@ export class World {
     if (!this.player.dead) this.updatePlayer(dt, input);
     else {
       this.laser.active = false;
-      this.laser.target = null;
+      this.laser.beams = [];
     }
     this.updateEnemies(dt);
     if (this.boss) this.updateBossState(dt);
@@ -260,8 +268,13 @@ export class World {
     const laser = laserStats(lv('red'));
     this.laser.active = firing && laser !== null;
     this.laser.width = laser?.width ?? 0;
-    // Releasing fire (or losing the red weapon) breaks the lock.
-    if (!this.laser.active) this.laser.target = null;
+    // Releasing fire (or losing the red weapon) breaks every lock. One beam per red level.
+    if (!this.laser.active) this.laser.beams = [];
+    else {
+      const n = lv('red');
+      while (this.laser.beams.length < n) this.laser.beams.push({ target: null, sx: p.x, sy: p.y, tx: p.x, ty: 0 });
+      this.laser.beams.length = n;
+    }
     if (!firing) {
       p.fireT = Math.max(0, p.fireT - dt);
       return;
@@ -316,10 +329,6 @@ export class World {
       }
     }
 
-    if (this.laser.active) {
-      // Lock on the nearest enemy; keep the lock until it dies or fire is released.
-      if (!this.isValidTarget(this.laser.target)) this.laser.target = this.nearestTarget(p.x, p.y);
-    }
   }
 
   private firePlayer(
@@ -468,15 +477,15 @@ export class World {
     return e.y > -10 && e.y < PLAY_H && e.x > 0 && e.x < PLAY_W && this.enemies.includes(e);
   }
 
-  private nearestTarget(x: number, y: number): Target | null {
+  private nearestTarget(x: number, y: number, exclude?: ReadonlySet<Target>): Target | null {
     let best: Target | null = null;
     let bd = Infinity;
     for (const e of this.enemies) {
-      if (e.dead || e.y < 0 || e.y > PLAY_H || e.x < 0 || e.x > PLAY_W) continue;
+      if (e.dead || e.y < 0 || e.y > PLAY_H || e.x < 0 || e.x > PLAY_W || exclude?.has(e)) continue;
       const d = dist2(x, y, e.x, e.y);
       if (d < bd) { bd = d; best = e; }
     }
-    if (this.boss && !this.boss.entering && this.phase === 'boss') {
+    if (this.boss && !this.boss.entering && this.phase === 'boss' && !exclude?.has(this.boss)) {
       const d = dist2(x, y, this.boss.x, this.boss.y);
       if (d < bd) best = this.boss;
     }
@@ -577,28 +586,46 @@ export class World {
     if (boss && this.phase === 'boss' && bossHit(boss, p.x, p.y, 0)) this.hurtPlayer();
   }
 
-  /** Red beam: damages the locked target, or everything in the column above the ship when nothing is locked. */
+  /**
+   * Red beams. Each beam locks the nearest enemy not already locked by another beam (or, when every
+   * visible enemy is taken, the nearest one) and keeps it until it dies or fire is released.
+   * A beam with nothing to lock goes straight up and hits everything in its column.
+   */
   private applyLaser(amount: number): void {
     const p = this.player;
     const boss = this.boss;
-    if (!this.isValidTarget(this.laser.target)) this.laser.target = this.nearestTarget(p.x, p.y);
-    const t = this.laser.target;
-    if (t) {
-      this.laser.tx = t.x;
-      this.laser.ty = t.y;
-      if (t === boss) this.damageBoss(amount);
-      else this.damageEnemy(t as Enemy, amount);
-      if (this.rng.chance(0.3)) this.spawnParticle('spark', t.x, t.y, this.rng.range(-90, 90), this.rng.range(-90, 90), 0.2, 4 * S, '#ffc0c6');
-      if (t.dead) this.laser.target = null;
-      return;
+    const beams = this.laser.beams;
+    const n = beams.length;
+    const locked = new Set<Target>();
+    for (const bm of beams) {
+      if (bm.target && this.isValidTarget(bm.target)) locked.add(bm.target);
+      else bm.target = null;
     }
-    this.laser.tx = p.x;
-    this.laser.ty = -20;
-    const hw = this.laser.width / 2;
-    for (const e of this.enemies) {
-      if (!e.dead && e.y < p.y && e.y > -10 && Math.abs(e.x - p.x) < hw + e.r) this.damageEnemy(e, amount);
-    }
-    if (boss && boss.y < p.y && Math.abs(boss.x - p.x) < hw + boss.halfW * 0.8) this.damageBoss(amount);
+    beams.forEach((bm, i) => {
+      bm.sx = p.x + (i - (n - 1) / 2) * 10 * S;
+      bm.sy = p.y - 26 * S;
+      if (!bm.target) {
+        bm.target = this.nearestTarget(bm.sx, bm.sy, locked) ?? this.nearestTarget(bm.sx, bm.sy);
+        if (bm.target) locked.add(bm.target);
+      }
+      const t = bm.target;
+      if (t) {
+        bm.tx = t.x;
+        bm.ty = t.y;
+        if (t === boss) this.damageBoss(amount);
+        else this.damageEnemy(t as Enemy, amount);
+        if (this.rng.chance(0.3)) this.spawnParticle('spark', t.x, t.y, this.rng.range(-90, 90), this.rng.range(-90, 90), 0.2, 4 * S, '#ffc0c6');
+        if (t.dead) bm.target = null;
+        return;
+      }
+      bm.tx = bm.sx;
+      bm.ty = -20;
+      const hw = this.laser.width / 2;
+      for (const e of this.enemies) {
+        if (!e.dead && e.y < p.y && e.y > -10 && Math.abs(e.x - bm.sx) < hw + e.r) this.damageEnemy(e, amount);
+      }
+      if (boss && boss.y < p.y && Math.abs(boss.x - bm.sx) < hw + boss.halfW * 0.8) this.damageBoss(amount);
+    });
   }
 
   // ---------------------------------------------------------------- pickups & effects

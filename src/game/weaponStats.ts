@@ -1,4 +1,4 @@
-// Pure weapon tuning functions: level (0..4) -> firing parameters.
+// Pure weapon tuning functions: level (0..8, no cap other than the slot count) -> firing parameters.
 // Rule: every weapon level adds +25% damage and +25% projectile size (linear, so losing a level removes 25%).
 import { GAME_SCALE } from '../config';
 import { WEAPONS, type WeaponType } from '../data/weapons';
@@ -27,7 +27,8 @@ export interface BaseShot {
 export function baseShot(green: number): BaseShot {
   const m = 1 + LEVEL_GROWTH * green;
   return {
-    interval: 0.15 - 0.015 * green,
+    // Fire rate gains flatten out past level 4 so high levels stay playable.
+    interval: Math.max(0.07, 0.15 - 0.015 * green),
     count: 1 + green,
     spread: 0.075,
     damage: 1.5 * m,
@@ -73,12 +74,13 @@ export interface SideShots {
 
 /**
  * Yellow: shots on both sides, aimed with the vertical arrows.
- * `vertical`: -1 = up held (shots at -45 deg), 0 = none (horizontal), 1 = down held (shots at +45 deg).
+ * `vertical`: -1 = up held (shots at +45 deg, downward), 0 = none (horizontal), 1 = down held (shots at -45 deg, upward).
  * Angles in radians, 0 = right, PI/2 = down. Each level adds one shot per side in a narrow fan.
  */
 export function sideShots(yellow: number, vertical: number): SideShots | null {
   if (yellow <= 0) return null;
-  const v = Math.sign(vertical);
+  // Inverted mapping: holding Up tilts the side shots downward, holding Down tilts them upward.
+  const v = -Math.sign(vertical);
   const right = (v * Math.PI) / 4;
   const left = Math.PI - right;
   const fan = 0.14;
@@ -105,7 +107,7 @@ export function missileStats(blue: number): MissileStats | null {
   if (blue <= 0) return null;
   const m = levelMultiplier(blue);
   return {
-    interval: 0.75 - 0.08 * blue, count: blue, homing: 9, damage: 3 * m,
+    interval: Math.max(0.35, 0.75 - 0.08 * blue), count: blue, homing: 9, damage: 3 * m,
     radius: 6 * GAME_SCALE * m, scale: GAME_SCALE * m,
   };
 }
@@ -115,7 +117,7 @@ export interface LaserStats {
   dps: number;
 }
 
-/** Red: electric beam locked on the nearest enemy. */
+/** Red: electric beams (one per level), each locked on an enemy. Stats are per beam. */
 export function laserStats(red: number): LaserStats | null {
   if (red <= 0) return null;
   const m = levelMultiplier(red);

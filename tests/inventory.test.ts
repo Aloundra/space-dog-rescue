@@ -57,15 +57,18 @@ describe('WeaponInventory', () => {
     expect(inv.size).toBe(0);
   });
 
-  it('level = number of copies, capped', () => {
+  it('level = number of copies, no cap below the slot count (5 copies = 5, 8 copies = 8)', () => {
     const inv = new WeaponInventory(MAX_SLOTS);
     expect(inv.level('green')).toBe(0);
     inv.add('green');
     inv.add('green');
     expect(inv.level('green')).toBe(2);
     for (let i = 0; i < 3; i++) inv.add('green');
-    expect(inv.size).toBe(5);
-    expect(inv.level('green')).toBe(MAX_WEAPON_LEVEL);
+    expect(inv.level('green')).toBe(5);
+    for (let i = 0; i < 3; i++) inv.add('green');
+    expect(inv.size).toBe(8);
+    expect(inv.level('green')).toBe(8);
+    expect(MAX_WEAPON_LEVEL).toBe(8);
   });
 
   it('extra slots raise the limit up to MAX_SLOTS', () => {

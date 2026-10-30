@@ -31,7 +31,7 @@ export class WeaponInventory {
     return this.items.length;
   }
 
-  /** Level of a weapon type = number of copies held, capped. 0 = not owned. */
+  /** Level of a weapon type = number of copies held (up to the slot count). 0 = not owned. */
   level(type: WeaponType): number {
     let n = 0;
     for (const t of this.items) if (t === type) n++;
