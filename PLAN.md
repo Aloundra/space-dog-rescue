@@ -1,4 +1,4 @@
-# PLAN — Iron Chouquette
+# PLAN — Space Dog Rescue (formerly Iron Chouquette)
 
 ## Milestones
 1. Scaffold Vite/TS, fixed-step loop, input, scaling — commit `m1`

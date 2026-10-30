@@ -1,6 +1,6 @@
-# Iron Chouquette
+# Space Dog Rescue
 
-Hommage au shoot'em up Flash **Iron Chouquette** (kadokado.com) : pilotez votre vaisseau et récupérez votre chien kidnappé par des vaisseaux ennemis.
+Hommage au shoot'em up Flash **Iron Chouquette** (kadokado.com), renommé **Space Dog Rescue** : pilotez votre vaisseau et récupérez votre chien kidnappé par des vaisseaux ennemis.
 
 TypeScript + Canvas 2D + Vite. Aucune librairie de jeu, aucun fichier image ni son : tout le pixel art est généré par le code.
 
@@ -64,11 +64,11 @@ Les choix de conception non spécifiés par le cahier des charges sont listés d
 ## Déploiement local (LAN)
 
 Le jeu est servi en continu sur **http://192.168.0.20:5280** par un service systemd utilisateur
-(`deploy/iron-chouquette.service`, installé dans `~/.config/systemd/user/`). Au démarrage, il rebuild puis lance `vite preview` sur `0.0.0.0:5280`.
+(`deploy/space-dog-rescue.service`, installé dans `~/.config/systemd/user/`). Au démarrage, il rebuild puis lance `vite preview` sur `0.0.0.0:5280`.
 
 ```bash
-systemctl --user restart iron-chouquette   # après une modification du code
-systemctl --user status iron-chouquette
-systemctl --user disable --now iron-chouquette   # arrêter définitivement
+systemctl --user restart space-dog-rescue   # après une modification du code
+systemctl --user status space-dog-rescue
+systemctl --user disable --now space-dog-rescue   # arrêter définitivement
 ```
 Note : `npm run dev` utilise le même port ; arrêtez le service avant de lancer le serveur de dev.

@@ -12,7 +12,9 @@ export interface KeyValueStorage {
   setItem(key: string, value: string): void;
 }
 
-export const HIGHSCORE_KEY = 'iron-chouquette.highscores.v1';
+export const HIGHSCORE_KEY = 'space-dog-rescue.highscores.v1';
+/** Scores saved under the game's former name; wiped on startup (scores were reset with the rename). */
+export const LEGACY_HIGHSCORE_KEYS = ['iron-chouquette.highscores.v1'];
 export const HIGHSCORE_COUNT = 10;
 export const NAME_MAX = 10;
 
@@ -28,7 +30,7 @@ export function qualifies(list: readonly HighScore[], score: number): boolean {
 
 export function sanitizeName(raw: string): string {
   const cleaned = raw.replace(/[^\p{L}\p{N} _-]/gu, '').trim().slice(0, NAME_MAX);
-  return cleaned.length > 0 ? cleaned : 'ANONYME';
+  return cleaned.length > 0 ? cleaned : 'ANONYMOUS';
 }
 
 export function insertScore(list: readonly HighScore[], entry: HighScore): HighScore[] {
@@ -65,7 +67,9 @@ export function saveScores(storage: KeyValueStorage | null, list: readonly HighS
 
 export function browserStorage(): KeyValueStorage | null {
   try {
-    return typeof localStorage !== 'undefined' ? localStorage : null;
+    if (typeof localStorage === 'undefined') return null;
+    for (const k of LEGACY_HIGHSCORE_KEYS) localStorage.removeItem(k);
+    return localStorage;
   } catch {
     return null;
   }

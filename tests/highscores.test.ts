@@ -34,7 +34,7 @@ describe('high scores', () => {
 
   it('sanitizes names', () => {
     expect(sanitizeName('  Zoé<script>  ')).toBe('Zoéscript');
-    expect(sanitizeName('')).toBe('ANONYME');
+    expect(sanitizeName('')).toBe('ANONYMOUS');
     expect(sanitizeName('ABCDEFGHIJKLMNOP')).toHaveLength(10);
   });
 
