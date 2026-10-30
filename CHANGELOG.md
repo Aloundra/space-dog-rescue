@@ -2,8 +2,14 @@
 
 Updates after the 8 initial milestones (see PLAN.md for the design decisions behind them).
 
+## Weapon rebalance
+- Level growth of damage and size lowered from +25% to +15% per level (level 5 = x1.6 instead of x2; green: x(1 + 0.15n) over the bare gun).
+- Red: beam width no longer grows with level; damage -20% (18 -> 14.4 dps per beam); level 4 now adds a 3rd beam instead of cutting small enemy bullets (beams: 1, 2, 2, 3, 3; level 6+ still +1 every 2 levels, max 8).
+- Violet: every ball moves along a sine wave (random phase; split balls keep 60% of the amplitude). Tuning in `violetBurst().wave`.
+- Green: level 4 no longer ricochets; each shot is joined by a smaller particle doing 50% less damage (inherits pierce). `BaseShot.ricochet` replaced by `particle`.
+
 ## Weapon progression by tiers
-- Weapon levels 1-5 each add a visible change and one ability; damage and size grow +25% per level, size stops at level 5.
+- Weapon levels 1-5 each add a visible change and one ability; damage and size grow +15% per level (see Weapon rebalance), size stops at level 5.
 - Level 6+ adds no ability: damage +10% per level and, for some weapons, an extra projectile every few levels (caps: green 8 shots, yellow 8 per side, blue 10 missiles, red 8 beams, violet +2 balls per level).
 - Abilities: green (2/3 shots, pierce, side-wall ricochet, heavy exploding shot), violet (rebound, trail, split, 4 orbiting orbs), pink (damaging trail, pickup magnet, graze shield, bullet time; speed capped at x2), yellow (wider fan, pierce, rear shot, boomerang), blue (2 missiles, blast, split, heavy piercing missile), red (2 beams, chain lightning, beams cut small bullets, massive main beam).
 - Sacrifice salvo damage: +50% per level up to 5, then +15%.
