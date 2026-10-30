@@ -65,26 +65,19 @@ describe('green (base gun)', () => {
     expect(results).toEqual([[true, false], [true, true]]);
   });
 
-  it('level 4 shots ricochet once off the side walls (never the top edge); level 3 shots do not', () => {
-    const run4 = (lv: number): { bounced: boolean; topBounce: boolean } => {
+  it('level 4 adds one half-damage particle per shot; level 3 has none', () => {
+    const count = (lv: number): { n: number; minDmg: number; maxDmg: number } => {
       const w = setup('green', lv);
-      w.player.x = 40; // next to the left wall, so the left-leaning shots reach it
-      const input = fireInput();
-      const wentLeft = new Set<Bullet>();
-      let bounced = false;
-      let topBounce = false;
-      run(w, input, 100, () => {
-        for (const b of w.pShots.items) {
-          if (!b.active || b.style !== 'shot') continue;
-          if (b.vx < 0) wentLeft.add(b);
-          else if (wentLeft.has(b)) bounced = true;
-          if (b.vy > 0) topBounce = true;
-        }
-      });
-      return { bounced, topBounce };
+      run(w, fireInput(), 1);
+      const shots = w.pShots.items.filter((b) => b.active && b.style === 'shot');
+      const dmg = shots.map((b) => b.dmg);
+      return { n: shots.length, minDmg: Math.min(...dmg), maxDmg: Math.max(...dmg) };
     };
-    expect(run4(3)).toEqual({ bounced: false, topBounce: false });
-    expect(run4(4)).toEqual({ bounced: true, topBounce: false });
+    const l3 = count(3);
+    const l4 = count(4);
+    expect(l4.n).toBe(l3.n * 2);
+    expect(l4.minDmg / l4.maxDmg).toBeCloseTo(0.5);
+    expect(l3.minDmg).toBe(l3.maxDmg);
   });
 
   it('level 5 adds a heavy exploding shot whose blast hurts neighbours', () => {
@@ -103,7 +96,7 @@ describe('green (base gun)', () => {
   it('level 6+ fires more shots', () => {
     const w = setup('green', 6, 1);
     run(w, fireInput(), 1);
-    expect(w.pShots.items.filter((b) => b.active && b.style === 'shot')).toHaveLength(4);
+    expect(w.pShots.items.filter((b) => b.active && b.style === 'shot' && b.tier === 5)).toHaveLength(4);
   });
 });
 
@@ -328,19 +321,9 @@ describe('red (laser)', () => {
     expect(beamsFor(3).laser.beams.every((b) => b.chain)).toBe(true);
   });
 
-  it('level 4 beams destroy small enemy bullets they cross', () => {
-    const survives = (lv: number): boolean => {
-      const w = beamsFor(lv);
-      const bm = w.laser.beams[0];
-      const shot = w.eShots.acquire()!;
-      Object.assign(shot, {
-        x: (bm.sx + bm.tx) / 2, y: (bm.sy + bm.ty) / 2, vx: 0, vy: 0, r: 7, life: 5, t: 0, style: 'ePellet', homing: 0, bounce: false,
-      });
-      w.update(STEP, fireInput());
-      return shot.active;
-    };
-    expect(survives(3)).toBe(true);
-    expect(survives(4)).toBe(false);
+  it('level 4 adds a third beam; beam width never changes', () => {
+    expect([1, 2, 3, 4, 5].map((l) => beamsFor(l).laser.beams.length)).toEqual([1, 2, 2, 3, 3]);
+    expect(beamsFor(4).laser.beams[0].w).toBe(beamsFor(1).laser.beams[0].w);
   });
 
   it('level 5 beam 0 is a wider, stronger main beam on the sturdiest enemy', () => {
@@ -360,7 +343,7 @@ describe('red (laser)', () => {
   });
 
   it('level 6+ adds beams, one more every two levels', () => {
-    expect(beamsFor(6).laser.beams).toHaveLength(3);
+    expect(beamsFor(6).laser.beams).toHaveLength(4);
     expect(setup('red', 8, 3).inventory.level('red')).toBe(8);
   });
 });
@@ -382,5 +365,15 @@ describe('level 6+ rules inside the World', () => {
     for (const b of w.pShots.items) if (b.active) expect(b.x).toBeGreaterThan(-31);
     expect(PLAY_W).toBeGreaterThan(0);
     expect(PLAY_H).toBeGreaterThan(0);
+  });
+});
+
+describe('violet sine motion', () => {
+  it('balls sway sideways around a straight heading', () => {
+    const w = setup('violet', 1);
+    run(w, fireInput(), 20);
+    const balls = w.pShots.items.filter((b) => b.active && b.style === 'violet');
+    expect(balls.length).toBeGreaterThan(0);
+    expect(balls.every((b) => b.waveAmp > 0)).toBe(true);
   });
 });

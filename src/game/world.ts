@@ -328,7 +328,12 @@ export class World {
         const a = -Math.PI / 2 + (i - (gun.count - 1) / 2) * gun.spread;
         const off = (i - (gun.count - 1) / 2) * 7 * S;
         const bl = this.firePlayer('shot', p.x + off, p.y - 26 * S, a, gun.speed, gun.damage, gun.radius, gun.scale);
-        if (bl) { bl.tier = gun.tier; bl.pierce = gun.pierce; bl.edgeBounce = gun.ricochet; }
+        if (bl) { bl.tier = gun.tier; bl.pierce = gun.pierce; }
+          if (gun.particle > 0) {
+            // Green level 4: a small particle rides along each shot for a fraction of its damage.
+            const pt = this.firePlayer('shot', p.x + off + 6 * S, p.y - 20 * S, a, gun.speed, gun.damage * gun.particle, gun.radius * 0.6, gun.scale * 0.55);
+            if (pt) pt.pierce = gun.pierce;
+          }
       }
       // Yellow side shots follow the vertical arrows: up = -45 deg, none = horizontal, down = +45 deg.
       const vertical = (input.isDown(KEYS.down) ? 1 : 0) - (input.isDown(KEYS.up) ? 1 : 0);
@@ -361,6 +366,9 @@ export class World {
             bl.rebound = v.rebound;
             bl.trail = v.trail;
             bl.splitOnHit = v.split;
+            bl.waveAmp = v.wave.amp;
+            bl.waveFreq = v.wave.freq;
+            bl.wavePhase = this.rng.range(0, Math.PI * 2);
           }
         }
       }
@@ -442,7 +450,7 @@ export class World {
     b.r = r; b.dmg = dmg; b.style = style; b.t = 0; b.life = 2; b.homing = 0; b.bounce = false;
     b.scale = scale; b.target = null;
     b.tier = 0; b.pierce = 0; b.edgeBounce = 0; b.rebound = 0; b.blast = 0; b.blastDmg = 0;
-    b.splitOnHit = false; b.splitAt = 0; b.turnAt = 0; b.returning = false; b.trail = false; b.hit.length = 0;
+    b.splitOnHit = false; b.splitAt = 0; b.turnAt = 0; b.returning = false; b.waveAmp = 0; b.trail = false; b.hit.length = 0;
     return b;
   }
 
@@ -640,10 +648,12 @@ export class World {
       }
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      // Green level 4: ricochet once off the side walls (never the top edge).
-      if (b.edgeBounce > 0 && ((b.x < 8 && b.vx < 0) || (b.x > PLAY_W - 8 && b.vx > 0))) {
-        b.vx = -b.vx;
-        b.edgeBounce--;
+      // Violet: sine-wave motion, as a lateral velocity perpendicular to the heading.
+      if (b.waveAmp > 0) {
+        const sp = Math.hypot(b.vx, b.vy) || 1;
+        const lat = b.waveAmp * b.waveFreq * Math.cos(b.t * b.waveFreq + b.wavePhase);
+        b.x += (-b.vy / sp) * lat * dt;
+        b.y += (b.vx / sp) * lat * dt;
       }
       if (b.t > b.life || b.y < -30 || b.y > PLAY_H + 30 || b.x < -30 || b.x > PLAY_W + 30) b.active = false;
     }
@@ -691,6 +701,9 @@ export class World {
       if (!c) continue;
       c.life = 1.6;
       c.tier = b.tier;
+      c.waveAmp = b.waveAmp * 0.6;
+      c.waveFreq = b.waveFreq;
+      c.wavePhase = b.wavePhase;
       c.hit.push(...b.hit);
     }
   }
@@ -846,20 +859,11 @@ export class World {
     return best;
   }
 
-  /** Squared distance from point (px, py) to the segment (ax, ay)-(bx, by). */
-  private segDist2(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
-    const dx = bx - ax;
-    const dy = by - ay;
-    const len2 = dx * dx + dy * dy;
-    const t = len2 === 0 ? 0 : clamp(((px - ax) * dx + (py - ay) * dy) / len2, 0, 1);
-    return dist2(px, py, ax + dx * t, ay + dy * t);
-  }
-
   /**
    * Red beams. Each beam locks the nearest enemy not already locked by another beam (or, when every
    * visible enemy is taken, the nearest one) and keeps it until it dies or fire is released.
    * A beam with nothing to lock goes straight up and hits everything in its column.
-   * Level 3+: chain lightning to a second enemy. Level 4+: beams cut small enemy bullets.
+   * Level 3+: chain lightning to a second enemy. Level 4+: a third beam.
    * Level 5+: beam 0 is a massive main beam that prefers the boss / the sturdiest enemy.
    */
   private applyLaser(dt: number): void {
@@ -920,17 +924,6 @@ export class World {
           if (!e.dead && e.y < p.y && e.y > -10 && Math.abs(e.x - bm.sx) < hw + e.r) this.damageEnemy(e, amount);
         }
         if (boss && boss.y < p.y && Math.abs(boss.x - bm.sx) < hw + boss.halfW * 0.8) this.damageBoss(amount);
-      }
-      if (stats.shield) {
-        // Level 4+: small enemy bullets touching the beam are destroyed.
-        for (const b of this.eShots.items) {
-          if (!b.active || b.r > 6 * S) continue;
-          const rr = bm.w / 2 + b.r;
-          if (this.segDist2(b.x, b.y, bm.sx, bm.sy, bm.tx, bm.ty) < rr * rr) {
-            b.active = false;
-            this.spawnParticle('spark', b.x, b.y, 0, 0, 0.15, 5 * S, '#ffc0c6');
-          }
-        }
       }
     });
   }

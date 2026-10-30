@@ -2,7 +2,7 @@
 //
 // Level rules (shared by every weapon):
 //  - Levels 1..5 ("tiers"): each level adds a visible change and one ability (see each function). Damage and
-//    projectile size both grow by +25% per level, and stop growing in size at level 5.
+//    projectile size both grow by +15% per level, and stop growing in size at level 5.
 //  - Levels 6+: no new ability and no more size. Damage grows +10% per level (relative to the level-5 value) and
 //    some weapons gain an extra projectile every few levels, up to a cap.
 import { GAME_SCALE } from '../config';
@@ -11,7 +11,7 @@ import { WEAPONS, type WeaponType } from '../data/weapons';
 /** Last level that unlocks something new. */
 export const TIER_LEVELS = 5;
 /** Per-level growth of damage and projectile size, levels 1..5. */
-export const LEVEL_GROWTH = 0.25;
+export const LEVEL_GROWTH = 0.15;
 /** Per-level damage growth above level 5, relative to the level-5 damage. */
 export const BONUS_GROWTH = 0.1;
 
@@ -20,14 +20,14 @@ export function tierOf(level: number): number {
   return Math.max(0, Math.min(level, TIER_LEVELS));
 }
 
-/** Damage multiplier of a weapon at `level`: x1 at level 1, +25% per level up to 5 (x2), then +10% per level. */
+/** Damage multiplier of a weapon at `level`: x1 at level 1, +15% per level up to 5 (x2), then +10% per level. */
 export function levelMultiplier(level: number): number {
   if (level <= 0) return 1;
   const tiered = 1 + LEVEL_GROWTH * (tierOf(level) - 1);
   return level <= TIER_LEVELS ? tiered : tiered * (1 + BONUS_GROWTH * (level - TIER_LEVELS));
 }
 
-/** Projectile size multiplier: grows +25% per level up to level 5, then stays put. */
+/** Projectile size multiplier: grows +15% per level up to level 5, then stays put. */
 export function sizeMultiplier(level: number): number {
   return level <= 0 ? 1 : 1 + LEVEL_GROWTH * (tierOf(level) - 1);
 }
@@ -63,13 +63,13 @@ export interface BaseShot {
   tier: number;
   /** Enemies a shot passes through before it stops (level 3+). */
   pierce: number;
-  /** Bounces off the side walls, not the top edge (level 4+). */
-  ricochet: number;
+  /** Companion particle fired with each shot (level 4+): its damage as a fraction of the shot's, 0 = none. */
+  particle: number;
   /** Heavy exploding shot in the middle of the volley (level 5+). */
   charge: ChargeShot | null;
 }
 
-/** Green gun multiplier: level 0 = bare gun (x1), +25% per level to 5, then +10% per level. */
+/** Green gun multiplier: level 0 = bare gun (x1), +15% per level to 5, then +10% per level. */
 function gunMultiplier(green: number): number {
   const tiered = 1 + LEVEL_GROWTH * tierOf(green);
   return green <= TIER_LEVELS ? tiered : tiered * (1 + BONUS_GROWTH * (green - TIER_LEVELS));
@@ -77,7 +77,7 @@ function gunMultiplier(green: number): number {
 
 /**
  * Base gun, upgraded by the green weapon. Level 0 = bare gun.
- * 1: two shots. 2: three shots. 3: shots pierce one enemy. 4: shots ricochet once off the side walls.
+ * 1: two shots. 2: three shots. 3: shots pierce one enemy. 4: each shot is joined by a particle doing 50% less damage.
  * 5: a heavy exploding shot joins the volley. 6+: +10% damage, +1 shot every 3 levels (max 8).
  */
 export function baseShot(green: number): BaseShot {
@@ -95,7 +95,7 @@ export function baseShot(green: number): BaseShot {
     scale: GAME_SCALE * size,
     tier: tierOf(green),
     pierce: green >= 3 ? 1 : 0,
-    ricochet: green >= 4 ? 1 : 0,
+    particle: green >= 4 ? 0.5 : 0,
     charge: green >= 5
       ? { interval: 0.9, damage: 6 * m, radius: 7 * GAME_SCALE, scale: GAME_SCALE * 1.8, blast: 55 * GAME_SCALE }
       : null,
@@ -155,6 +155,8 @@ export interface VioletBurst {
   trail: boolean;
   /** Splits into two small balls on impact (level 4+). */
   split: boolean;
+  /** Sine-wave motion: lateral amplitude (logical px) and angular speed (rad/s). */
+  wave: { amp: number; freq: number };
 }
 
 /**
@@ -174,6 +176,7 @@ export function violetBurst(violet: number): VioletBurst | null {
     rebound: violet >= 2 ? 1 : 0,
     trail: violet >= 3,
     split: violet >= 4,
+    wave: { amp: 22 * GAME_SCALE, freq: 7 },
   };
 }
 
@@ -304,27 +307,25 @@ export interface LaserStats {
   main: { width: number; dps: number } | null;
   /** Level 3+: the damage jumps to a second enemy this close to the first one (logical px), at `factor` strength. */
   chain: { range: number; factor: number } | null;
-  /** Level 4+: beams destroy small enemy bullets they cross. */
-  shield: boolean;
   tier: number;
 }
 
 /**
  * Red: electric beams, each locked on an enemy. Stats are per beam.
- * 1: one beam. 2: two beams. 3: chain lightning. 4: beams cut enemy bullets. 5: massive main beam on the boss / biggest enemy.
+ * 1: one beam. 2: two beams. 3: chain lightning. 4: a third beam. 5: massive main beam on the boss / biggest enemy.
  * 6+: +10% damage, +1 beam every 2 levels (max 8).
  */
 export function laserStats(red: number): LaserStats | null {
   if (red <= 0) return null;
   const m = levelMultiplier(red);
-  const width = 14 * GAME_SCALE * sizeMultiplier(red);
-  const dps = 18 * m;
+  // Beam thickness never changes with the level.
+  const width = 14 * GAME_SCALE;
+  const dps = 14.4 * m;
   return {
-    beams: Math.min(8, (red === 1 ? 1 : 2) + bonusCount(red, 2)),
+    beams: Math.min(8, (red === 1 ? 1 : red >= 4 ? 3 : 2) + bonusCount(red, 2)),
     width, dps,
     main: red >= 5 ? { width: width * 1.8, dps: dps * 2.5 } : null,
     chain: red >= 3 ? { range: 170 * GAME_SCALE, factor: 0.6 } : null,
-    shield: red >= 4,
     tier: tierOf(red),
   };
 }

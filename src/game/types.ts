@@ -42,6 +42,10 @@ export interface Bullet {
   /** Yellow boomerang: age in seconds at which the shot turns back toward the ship (0 = never). */
   turnAt: number;
   returning: boolean;
+  /** Violet sine wave: lateral amplitude (px), angular speed (rad/s) and phase; amplitude 0 = straight. */
+  waveAmp: number;
+  waveFreq: number;
+  wavePhase: number;
   /** Violet luminous trail (visual). */
   trail: boolean;
   /** Targets already hit (so a piercing shot never hits the same one twice). */
@@ -58,7 +62,7 @@ export interface Target {
 export const makeBullet = (): Bullet => ({
   active: false, x: 0, y: 0, vx: 0, vy: 0, r: 4, dmg: 1, style: 'shot', t: 0, life: 3, homing: 0, bounce: false,
   scale: 1, target: null, tier: 0, pierce: 0, edgeBounce: 0, rebound: 0, blast: 0, blastDmg: 0,
-  splitOnHit: false, splitAt: 0, turnAt: 0, returning: false, trail: false, hit: [],
+  splitOnHit: false, splitAt: 0, turnAt: 0, returning: false, waveAmp: 0, waveFreq: 0, wavePhase: 0, trail: false, hit: [],
 });
 
 export type EnemyId = EnemyKind | 'carrier';

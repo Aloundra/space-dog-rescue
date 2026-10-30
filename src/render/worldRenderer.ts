@@ -251,7 +251,7 @@ export class WorldRenderer {
     const y = 0;
     switch (b.style) {
       case 'shot': {
-        // Green: plain lime bolt (tier 0-1), green glow (2), long trail (3 = pierce), flares (4 = ricochet), halo (5).
+        // Green: plain lime bolt (tier 0-1), green glow (2), long trail (3 = pierce), flares (4 = companion particle), halo (5).
         const t = b.tier;
         if (t >= 5) {
           ctx.fillStyle = 'rgba(196,255,201,0.28)';

@@ -28,21 +28,21 @@ describe('weapon levels', () => {
 });
 
 describe('weapon level rules: abilities over levels 1-5, damage and count after', () => {
-  it('damage grows +25% per level up to 5, then +10% per level (of the level-5 value)', () => {
+  it('damage grows +15% per level up to 5, then +10% per level (of the level-5 value)', () => {
     expect(levelMultiplier(1)).toBe(1);
-    expect(levelMultiplier(2)).toBe(1.25);
-    expect(levelMultiplier(3)).toBe(1.5);
-    expect(levelMultiplier(5)).toBe(2);
-    expect(levelMultiplier(6)).toBeCloseTo(2.2);
-    expect(levelMultiplier(10)).toBeCloseTo(3);
-    expect(levelMultiplier(20)).toBeCloseTo(5);
+    expect(levelMultiplier(2)).toBeCloseTo(1.15);
+    expect(levelMultiplier(3)).toBeCloseTo(1.3);
+    expect(levelMultiplier(5)).toBeCloseTo(1.6);
+    expect(levelMultiplier(6)).toBeCloseTo(1.76);
+    expect(levelMultiplier(10)).toBeCloseTo(2.4);
+    expect(levelMultiplier(20)).toBeCloseTo(4);
   });
 
   it('size stops growing at level 5', () => {
     expect(sizeMultiplier(1)).toBe(1);
-    expect(sizeMultiplier(5)).toBe(2);
-    expect(sizeMultiplier(6)).toBe(2);
-    expect(sizeMultiplier(20)).toBe(2);
+    expect(sizeMultiplier(5)).toBeCloseTo(1.6);
+    expect(sizeMultiplier(6)).toBeCloseTo(1.6);
+    expect(sizeMultiplier(20)).toBeCloseTo(1.6);
     for (const l of [5, 12, 20]) {
       expect(violetBurst(l)!.radius).toBeCloseTo(violetBurst(5)!.radius);
       expect(missileStats(l)!.radius).toBeCloseTo(missileStats(5)!.radius);
@@ -60,7 +60,7 @@ describe('weapon level rules: abilities over levels 1-5, damage and count after'
       expect(baseShot(l).count).toBeLessThanOrEqual(3);
       expect(sideShots(l, 0)!.angles.length).toBeLessThanOrEqual(4);
       expect(missileStats(l)!.count).toBeLessThanOrEqual(2);
-      expect(laserStats(l)!.beams).toBeLessThanOrEqual(2);
+      expect(laserStats(l)!.beams).toBeLessThanOrEqual(3);
     }
     expect(baseShot(6).count).toBe(4);
     expect(baseShot(20).count).toBe(8);
@@ -68,15 +68,15 @@ describe('weapon level rules: abilities over levels 1-5, damage and count after'
     expect(sideShots(20, 0)!.angles.length / 2).toBe(8);
     expect(missileStats(6)!.count).toBe(3);
     expect(missileStats(20)!.count).toBe(10);
-    expect(laserStats(6)!.beams).toBe(3);
+    expect(laserStats(6)!.beams).toBe(4);
     expect(laserStats(20)!.beams).toBe(8);
     expect(violetBurst(6)!.count).toBe(violetBurst(5)!.count + 2);
   });
 
   it('levels 1-5 unlock one ability each, in order', () => {
-    // Green: 1 two shots, 2 three, 3 pierce, 4 ricochet off the side walls, 5 charged exploding shot.
+    // Green: 1 two shots, 2 three, 3 pierce, 4 particle per shot, 5 charged exploding shot.
     expect([1, 2, 3, 4, 5].map((l) => baseShot(l).count)).toEqual([2, 3, 3, 3, 3]);
-    expect([2, 3, 4].map((l) => [baseShot(l).pierce, baseShot(l).ricochet])).toEqual([[0, 0], [1, 0], [1, 1]]);
+    expect([2, 3, 4].map((l) => [baseShot(l).pierce, baseShot(l).particle])).toEqual([[0, 0], [1, 0], [1, 0.5]]);
     expect(baseShot(4).charge).toBeNull();
     expect(baseShot(5).charge!.blast).toBeGreaterThan(0);
     // Violet: 2 rebound, 3 trail, 4 split, 5 orbitals.
@@ -103,9 +103,9 @@ describe('weapon level rules: abilities over levels 1-5, damage and count after'
     expect([2, 3, 4, 5].map((l) => [missileStats(l)!.blast > 0, missileStats(l)!.split, missileStats(l)!.heavy !== null])).toEqual([
       [false, false, false], [true, false, false], [true, true, false], [true, true, true],
     ]);
-    // Red: 2 two beams, 3 chain, 4 shield, 5 main beam.
-    expect([1, 2].map((l) => laserStats(l)!.beams)).toEqual([1, 2]);
-    expect([2, 3, 4, 5].map((l) => [laserStats(l)!.chain !== null, laserStats(l)!.shield, laserStats(l)!.main !== null])).toEqual([
+    // Red: 2 two beams, 3 chain, 4 third beam, 5 main beam.
+    expect([1, 2, 3, 4, 5].map((l) => laserStats(l)!.beams)).toEqual([1, 2, 2, 3, 3]);
+    expect([2, 3, 4, 5].map((l) => [laserStats(l)!.chain !== null, laserStats(l)!.beams === 3, laserStats(l)!.main !== null])).toEqual([
       [false, false, false], [true, false, false], [true, true, false], [true, true, true],
     ]);
   });
@@ -127,7 +127,7 @@ describe('weapon level rules: abilities over levels 1-5, damage and count after'
   });
 });
 
-describe('weapon level growth (+25% damage and size per level, -25% when a level is lost)', () => {
+describe('weapon level growth (+15% damage and size per level, -25% when a level is lost)', () => {
   it('applies to damage and projectile size of every projectile weapon', () => {
     const pairs = [
       [violetBurst(1)!, violetBurst(2)!],
@@ -135,16 +135,16 @@ describe('weapon level growth (+25% damage and size per level, -25% when a level
       [missileStats(1)!, missileStats(2)!],
     ];
     for (const [a, b] of pairs) {
-      expect(b.damage / a.damage).toBeCloseTo(1.25);
-      expect(b.radius / a.radius).toBeCloseTo(1.25);
-      expect(b.scale / a.scale).toBeCloseTo(1.25);
+      expect(b.damage / a.damage).toBeCloseTo(1.15);
+      expect(b.radius / a.radius).toBeCloseTo(1.15);
+      expect(b.scale / a.scale).toBeCloseTo(1.15);
     }
-    // Losing a level: back from level 3 to 2 removes 25% of base.
-    expect(missileStats(3)!.damage - missileStats(2)!.damage).toBeCloseTo(missileStats(1)!.damage * 0.25);
-    expect(baseShot(1).damage / baseShot(0).damage).toBeCloseTo(1.25);
-    expect(baseShot(2).radius / baseShot(0).radius).toBeCloseTo(1.5);
-    expect(laserStats(2)!.dps / laserStats(1)!.dps).toBeCloseTo(1.25);
-    expect(laserStats(2)!.width / laserStats(1)!.width).toBeCloseTo(1.25);
+    // Losing a level: back from level 3 to 2 removes 15% of base.
+    expect(missileStats(3)!.damage - missileStats(2)!.damage).toBeCloseTo(missileStats(1)!.damage * 0.15);
+    expect(baseShot(1).damage / baseShot(0).damage).toBeCloseTo(1.15);
+    expect(baseShot(2).radius / baseShot(0).radius).toBeCloseTo(1.3);
+    expect(laserStats(2)!.dps / laserStats(1)!.dps).toBeCloseTo(1.15);
+    expect(laserStats(5)!.width).toBe(laserStats(1)!.width);
   });
 });
 
